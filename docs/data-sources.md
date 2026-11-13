@@ -5,6 +5,9 @@
 
 Скрипт: [`scripts/fetch-sources.ps1`](../scripts/fetch-sources.ps1)
 
+Как разбирать уже сохранённые JSON-файлы без сети:
+[`docs/json-extraction.md`](json-extraction.md).
+
 ```powershell
 # все источники
 powershell -ExecutionPolicy Bypass -File scripts\fetch-sources.ps1

@@ -7,4 +7,7 @@ dist/
 build/
 agent-rules/
 .agent/
-data/
+.vercel/
+# Сырые выгрузки источников (data/backups) не коммитим.
+# Встроенные снимки frontend/public/data/snapshots/ коммитятся для деплоя.
+/data/
