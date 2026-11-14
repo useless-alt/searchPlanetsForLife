@@ -6,7 +6,12 @@
  */
 
 import type { SourceId } from '@/types';
-import type { Row } from '../sources/parser';
+
+/**
+ * Строка выгрузки каталога (сырой объект из источника).
+ * Тип вынесен сюда: модуль парсера источников удалён вместе с черновиком.
+ */
+type Row = Record<string, unknown>;
 
 const ENDPOINT = '/api/catalog';
 
