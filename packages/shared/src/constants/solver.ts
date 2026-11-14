@@ -21,21 +21,18 @@ export const RHO_EARTH = 5.51;
 export const K_MIN = 3;
 
 /**
- * Границы модели Чен — Киппинг (Уровень Б, п. 1).
+ * Границы модели Чен — Киппинг (Уровень Б, п. 1; U5 в реестре решений).
  *
- *   R → M:  R < CHEN_R_BREAKPOINT → M = R^3.58;
- *           CHEN_R_BREAKPOINT ≤ R ≤ CHEN_R_MAX → M = CHEN_R_HIGH_COEFFICIENT · R^CHEN_R_HIGH_EXPONENT;
- *           R > CHEN_R_MAX → null.
+ *   R → M:  R < CHEN_R_BREAKPOINT → M = R^CHEN_R_LOW_EXPONENT;
+ *           R ≥ CHEN_R_BREAKPOINT → M = CHEN_R_HIGH_COEFFICIENT · R^CHEN_R_HIGH_EXPONENT.
+ *           Верхней границы для R нет: формула действует при всех R ≥ 1.23.
  *   M → R:  M < CHEN_M_BREAKPOINT → R = M^CHEN_M_LOW_EXPONENT;
  *           CHEN_M_BREAKPOINT ≤ M < CHEN_M_MAX → R = CHEN_M_HIGH_COEFFICIENT · M^CHEN_M_HIGH_EXPONENT;
- *           M ≥ CHEN_M_MAX → null (U5).
+ *           M ≥ CHEN_M_MAX → null (неопределён только этот случай).
  */
 
 /** Граница радиуса между двумя ветвями закона R → M [R⊕]. */
 export const CHEN_R_BREAKPOINT = 1.23;
-
-/** Верхняя граница применимости закона R → M [R⊕]. */
-export const CHEN_R_MAX = 12;
 
 /** Показатель степени в нижней ветви закона R → M. */
 export const CHEN_R_LOW_EXPONENT = 3.58;

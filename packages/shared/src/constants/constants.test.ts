@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_FILTERS, DEFAULT_SETTINGS } from '../types/settings';
 import { PROVENANCE_ORDER } from '../types/provenance';
 
+import * as solverConstants from './solver';
+
 import {
   AU_KM,
   BACKUP_LATEST_FILENAME,
@@ -239,6 +241,10 @@ describe('константы решателя (п. 1)', () => {
     expect(CHEN_R_BREAKPOINT).toBe(1.23);
     expect(CHEN_M_BREAKPOINT).toBe(2.04);
     expect(CHEN_M_MAX).toBe(132);
+  });
+
+  it('верхней границы для R → M нет: формула действует при всех R ≥ 1.23 (U5)', () => {
+    expect('CHEN_R_MAX' in solverConstants).toBe(false);
   });
 });
 

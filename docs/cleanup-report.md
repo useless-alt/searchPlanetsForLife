@@ -462,5 +462,6 @@ ml/.gitkeep
 
 ### 10.3 Что это меняет для Задачи 1
 
-- Старая папка `frontend/` удалена целиком: её сборочная конфигурация (`vite.config.ts`, `tsconfig.json`, `index.html`) перенесена в `apps/web`, а Tailwind/PostCSS-конфиги пока не переносились — они понадобятся вместе с UI (задачи 12+). Пустые плейсхолдеры `backend/` и `ml/` удалены: их роль выполняют `apps/server` и `packages/shared`.
+- Старая папка `frontend/` удалена целиком: её сборочная конфигурация (`vite.config.ts`, `tsconfig.json`, `index.html`, `tailwind.config.js`, `postcss.config.js`) перенесена в `apps/web` **адаптацией сохранённых файлов**, а не переписыванием с нуля: в `tsconfig` сохранены alias `@/*` → `src/*`, `useDefineForClassFields`, `allowImportingTsExtensions`, `noFallthroughCasesInSwitch`; в `vite.config.ts` — alias `@` → `src`, `build.target: 'es2022'`, `chunkSizeWarningLimit: 1600`; конфиги Tailwind/PostCSS перенесены как есть с обновлёнными content-глобами. Пустые плейсхолдеры `backend/` и `ml/` удалены: их роль выполняют `apps/server` и `packages/shared`.
 - Корневой `.env.example` создан заново под новую архитектуру (порт, каталог резервных копий, таймаут); шаблоны с переменными Supabase остались в архиве.
+- По обновлённому мастер-плану введена задача **11a «Supabase: выгрузка готовых записей»** — фича вернётся в проект и будет привязана к новой модели данных, поэтому архивный код сохранён целиком (см. `archive/README.md`). Стек черновика (Vite) совпадает со стеком 1.2, поэтому правило «меняется стек в Части 1, а не код фичи» здесь не потребовалось.

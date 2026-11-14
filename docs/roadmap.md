@@ -6,7 +6,8 @@
 | ID | Название задачи | Зависит от | Tier | Краткая суть |
 |---|---|---|---|---|
 | **Этап 0 — инициализация** | | | | |
-| 1 | Монорепо, конфиги, структура папок | — | TIER 1 | workspaces, tsconfig, lint, vitest, `.env.example`, health-эндпоинт |
+| 0 | Аудит и зачистка черновика | — | TIER 2 | бэкап, «оставить / удалить», отчёт (текст выдан ранее) |
+| 1 | Монорепо, конфиги, структура папок | 0 | TIER 1 | адаптировать сохранённые настройки, не создавать заново: workspaces, tsconfig, lint, vitest, `.env.example`, health-эндпоинт |
 | 2 | Доменные типы и каталог констант | 1 | TIER 2 | типы сущностей, все коэффициенты/эталоны/веса/пороги, реестр источников, единицы |
 | **Этап 1 — ядро** | | | | |
 | 3 | Physics Solver: Уровень А | 2 | TIER 2 | Стефан — Больцман, Кеплер, поток/T_eq, плотность |
@@ -18,8 +19,10 @@
 | 9 | Адаптеры: Gaia, SIMBAD, Exo.MAST (per-planet) | 2, 7 | TIER 2 | звёздные параметры, идентификация, ленивые свойства планеты |
 | 10 | Дедупликация и слияние | 2, 8, 9 | TIER 3 | сопоставление по имени, звезде, RA/Dec, орбите; приоритет полей; происхождение |
 | 11 | Оркестратор загрузки и REST API | 7, 8, 9, 10 | TIER 2 | загрузка 6 источников, резерв, статусы, журнал ошибок, эндпоинты |
+| 11a | Supabase: выгрузка готовых записей | 7, 10, 11 | TIER 2 | сохранить имеющуюся фичу, привязать к новой модели данных |
 | **Этап 2 — вертикальные срезы UI** | | | | |
 | 12 | Каркас web: store, загрузка, Web Worker | 6, 11 | TIER 2 | загрузка каталога, пересчёт в воркере, состояния загрузки |
+| 12a | Дизайн-токены и базовые компоненты по `@design-taste-frontend` | 12 | TIER 2 | единая визуальная основа до UI-задач 13–29 |
 | 13 | Шапка: режимы, счётчики, источники, баннеры | 12 | TIER 2 | переключатель, счётчики, панель источников, баннер резерва, обновление |
 | 14 | Поиск и «Параметры модели» | 12 | TIER 2 | поиск, границы HZ, чекбоксы штрафов, ползунок Q_data, сброс |
 | 15 | Панель фильтров и «Земля (эталон)» | 12 | TIER 2 | спектральные классы, диапазоны, калибровка, «Показывать кандидатов» |
@@ -48,6 +51,6 @@
 | ID | Статус |
 |---|---|
 | 0 | ✅ Аудит и зачистка черновика — `docs/cleanup-report.md`, ветка `rewrite`, тег `pre-rewrite` |
-| 1 | ✅ Монорепо, конфиги, структура папок — `package.json` (workspaces), `tsconfig.base.json`, ESLint/Prettier, Vitest-workspace, `packages/shared`, `apps/server` (Fastify + `/api/health`), `apps/web` (Vite + React) |
+| 1 | ✅ Монорепо, конфиги, структура папок — `package.json` (workspaces), `tsconfig.base.json`, ESLint/Prettier, Vitest-workspace, `packages/shared`, `apps/server` (Fastify + `/api/health`), `apps/web` (Vite + React); сохранённые конфиги черновика адаптированы под 1.3, не переписаны заново |
 | 2 | ✅ Доменные типы и каталог констант — `packages/shared/src/types/*` (provenance, planet, solver, scoring, settings, sources), `packages/shared/src/constants/*` (esi, koppa, penalties, quality, solver, spectral, sources, backup, units), 26 тестов констант |
 | 3 | ✅ Physics Solver, Уровень А — `packages/shared/src/physics/provenance.ts` (makeParam, nullParam, derivedProvenance) и `levelA.ts` (L, d, P, S, T_eq, rho + агрегатор applyLevelA), 40 тестов |
