@@ -11,6 +11,10 @@ agent-rules/
 .agent/
 .agents/
 .vercel/
+# Локальные рабочие материалы: промпты и заметки не коммитим.
+prompt.txt
+заметки.md
+notes.md
 # Сырые выгрузки источников (data/backups) не коммитим.
 # Встроенные снимки frontend/public/data/snapshots/ коммитятся для деплоя.
 /data/
