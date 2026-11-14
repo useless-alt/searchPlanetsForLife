@@ -40,6 +40,9 @@ interface AppState {
   exomast: Record<string, ExoMastData>;
   exomastLoading: Record<string, boolean>;
 
+  /** Читать каталоги из Supabase Postgres как из основного источника. */
+  preferRemote: boolean;
+
   setMode: (mode: ModeId) => void;
   setModel: (patch: Partial<ModelParams>) => void;
   resetModel: () => void;
@@ -50,6 +53,7 @@ interface AppState {
   setCardOpen: (open: boolean) => void;
   resetMap: () => void;
   setNotice: (notice: string | null) => void;
+  setPreferRemote: (value: boolean) => void;
 
   startPipeline: () => void;
   refresh: () => void;
@@ -105,6 +109,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   exomast: {},
   exomastLoading: {},
+  preferRemote: false,
 
   setMode: (mode) => {
     set({ mode });
@@ -141,15 +146,21 @@ export const useAppStore = create<AppState>((set, get) => ({
   setCardOpen: (open) => set({ cardOpen: open }),
   resetMap: () => set({ mapResetToken: get().mapResetToken + 1 }),
   setNotice: (notice) => set({ notice }),
+  setPreferRemote: (value) => {
+    set({ preferRemote: value });
+    set({ error: null, done: false });
+    getClient(get, set).start(true, value);
+    set({ notice: value ? 'Каталоги загружаются из Supabase Postgres' : 'Каталоги загружаются из источников' });
+  },
 
   startPipeline: () => {
     if (started) return;
     started = true;
-    getClient(get, set).start(false);
+    getClient(get, set).start(false, get().preferRemote);
   },
   refresh: () => {
     set({ error: null, done: false });
-    getClient(get, set).start(true);
+    getClient(get, set).start(true, get().preferRemote);
   },
   rollback: (source, key) => {
     getClient(get, set).useBackup(source, key);

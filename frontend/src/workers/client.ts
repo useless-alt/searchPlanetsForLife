@@ -18,7 +18,7 @@ export class PipelineClient {
     this.callbacks = callbacks;
   }
 
-  start(forceLive = false): void {
+  start(forceLive = false, preferRemote = false): void {
     this.stop();
     this.worker = new Worker(new URL('./pipeline.worker.ts', import.meta.url), {
       type: 'module',
@@ -35,7 +35,7 @@ export class PipelineClient {
     this.worker.onerror = (event) => {
       this.callbacks.onError(event.message || 'Ошибка Web Worker');
     };
-    this.send({ type: 'start', forceLive });
+    this.send({ type: 'start', forceLive, preferRemote });
   }
 
   useBackup(source: SourceId, key: string): void {

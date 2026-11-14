@@ -30,8 +30,9 @@
 
 Vite 5, React 18, TypeScript strict, Tailwind CSS, компоненты в стиле shadcn/ui, lucide-react,
 Zustand, TanStack Table, three.js + @react-three/fiber + @react-three/drei, zod, idb,
-Recharts, papaparse (только CSV-fallback), vitest. Тяжёлый пайплайн выполняется в module Web
-Worker; ранжирование и фильтры — на главном потоке через `useMemo`.
+Recharts, papaparse (только CSV-fallback), vitest, @supabase/supabase-js (только на сервере).
+Тяжёлый пайплайн выполняется в module Web Worker; ранжирование и фильтры — на главном потоке
+через `useMemo`.
 
 ## Архитектура
 
@@ -55,7 +56,9 @@ Worker; ранжирование и фильтры — на главном по�
 frontend/
 ├── api/
 │   ├── proxy.ts              # Vercel Edge Function, runtime = edge
-│   └── proxy-handler.ts      # общая логика прокси и allowlist
+│   ├── proxy-handler.ts      # общая логика прокси и allowlist
+│   ├── catalog.ts            # Vercel Edge Function: чтение/запись каталогов в Supabase
+│   └── supabase-handler.ts   # общая логика доступа к Postgres (только сервер)
 ├── public/data/snapshots/    # аварийные снимки пяти источников
 ├── scripts/
 │   ├── make-snapshots.mjs    # запуск генератора через Vite ssrLoadModule
@@ -121,14 +124,16 @@ npm run dev
 или CSV-fallback (papaparse). Числа приводятся через `num()`: пустая строка, `NaN`, `Infinity` и
 нефизичные значения дают `null`, а не ноль.
 
-Для каждого источника действуют четыре уровня:
+Для каждого источника действуют пять уровней:
 
 1. **LIVE** — свежий ответ API; записывается в IndexedDB.
 2. **IndexedDB** — последняя успешная версия. При старте она показывается сразу, а LIVE-загрузка
    идёт параллельно (stale-while-revalidate).
-3. **Встроенный снимок** — `frontend/public/data/snapshots/<source>.json`, если LIVE и IDB
-   недоступны.
-4. **Пропуск** — данных нет; источник не роняет приложение.
+3. **Supabase (Postgres)** — последняя выгрузка источника, загруженная в базу. Используется,
+   если LIVE недоступен и в IndexedDB пусто.
+4. **Встроенный снимок** — `frontend/public/data/snapshots/<source>.json`, если LIVE, IDB и
+   Supabase недоступны.
+5. **Пропуск** — данных нет; источник не роняет приложение.
 
 Уровень всегда виден в панели источников и в строке состояния. Gaia и SIMBAD без подходящих
 идентификаторов получают статус «Пропущен — нет идентификаторов», а не ошибку. Exo.MAST не
@@ -335,6 +340,81 @@ Gaia/SIMBAD, потому что `scripts/fetch-sources.ps1` ограничив�
 Сырые выгрузки `data/` в репозиторий не коммитятся. Снимки `frontend/public/data/snapshots/`
 коммитятся, чтобы они попали в деплой Vercel и работали как аварийный слой.
 
+## Хранилище Supabase (Postgres)
+
+Каталоги экзопланет можно хранить в Supabase и отдавать приложению оттуда: это снимает
+зависимость от доступности TAP-источников и ускоряет старт (одна-две выгрузки вместо пяти
+сетевых запросов).
+
+### 1. Схема базы
+
+Выполните `supabase/schema.sql` в Supabase Dashboard → SQL Editor (или через `psql`):
+
+| Таблица | Содержимое |
+|---|---|
+| `catalog_snapshots` | метаданные выгрузки: источник, дата, число записей, endpoint, колонки |
+| `catalog_rows` | строки выгрузки в исходном виде (`jsonb`), порядок — в `ord` |
+
+Обе таблицы закрыты RLS без политик: читать и писать может только `service_role`.
+Публичный `anon`-ключ к ним доступа не имеет.
+
+### 2. Куда вписать токен
+
+Файл `frontend/.env.local` (создан, в репозиторий не попадает):
+
+```dotenv
+SUPABASE_URL=https://<project-ref>.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=<ключ с полным доступом>
+SUPABASE_CATALOG_WRITE_KEY=<любой длинный секрет, если нужна запись из браузера>
+```
+
+- `SUPABASE_URL` — URL проекта из Dashboard → Project Settings → API.
+- `SUPABASE_SERVICE_ROLE_KEY` — ключ доступа к базе. Поддерживаются два вида:
+  - `sb_secret_…` или legacy `service_role` JWT — ключ проекта (Dashboard → API Keys);
+  - `sbp_…` — Personal Access Token (Dashboard → Account → Access Tokens). Тогда сервер
+    сам возбирает ключ проекта через management API (`GET /v1/projects/<ref>/api-keys`).
+    Новый secret-ключ management API отдаёт замаскированным, поэтому используется
+    legacy `service_role` JWT.
+
+  Значение используется **только на сервере**: в Edge-функции `/api/catalog` и в скриптах
+  загрузки. В бандл фронтенда оно не попадает и в браузер не отдаётся. Ключ проекта
+  кэшируется в памяти процесса на 10 минут.
+- `SUPABASE_CATALOG_WRITE_KEY` — дополнительный секрет для записи из браузера (заголовок
+  `x-catalog-key`). Не задан — запись через API закрыта, чтение работает.
+
+Шаблон с комментариями — `frontend/.env.example`. Для Vercel те же переменные задаются
+в настройках проекта (Environment Variables).
+
+### 3. Загрузка каталогов в базу
+
+```bash
+cd frontend
+npm run snapshots -- --backups   # или без флага — LIVE-выгрузки
+npm run upload:catalog            # выгрузка снимков в Postgres
+npm run upload:catalog -- --only=nasa,gaia
+npm run supabase:schema           # применить supabase/schema.sql (нужен PAT)
+```
+
+Скрипт `frontend/scripts/upload-catalog.mjs` читает `public/data/snapshots/*.json` и кладёт их
+в таблицы через PostgREST, используя ключ доступа к базе. Хранятся последние три версии
+выгрузки на источник, старые удаляются каскадом.
+
+В самом приложении панель «Источники» показывает состояние подключения и позволяет выгрузить
+текущий резерв источника в базу по кнопке «В Supabase» (нужен ключ записи). Галочка
+«Брать каталоги из Postgres как из основного источника» переключает приложение на режим,
+в котором каталоги читаются из базы без запросов к TAP.
+
+### 4. Маршруты
+
+| Метод | Путь | Назначение |
+|---|---|---|
+| `GET` | `/api/catalog?health=1` | проверка подключения и доступности таблиц |
+| `GET` | `/api/catalog?sources=nasa,gaia` | последние выгрузки источников (метаданные + строки) |
+| `POST` | `/api/catalog` | запись выгрузки; заголовок `x-catalog-key` |
+
+Маршрут обслуживает Edge-функция `frontend/api/catalog.ts` (секреты — в переменных окружения
+Vercel) и dev-плагин `frontend/vite.dev-proxy.ts` (секреты — из `frontend/.env.local`).
+
 ## Деплой на Vercel
 
 Проект рассчитан на статический Vite-билд и одну Edge-функцию.
@@ -343,7 +423,8 @@ Gaia/SIMBAD, потому что `scripts/fetch-sources.ps1` ограничив�
 2. **Root Directory** — `frontend` (не корень монорепозитория).
 3. Framework Preset — Vite; Build Command — `npm run build`; Output Directory — `dist`;
    Install Command — `npm ci`. Node.js 18+.
-4. Переменные окружения не нужны.
+4. Переменные окружения не нужны, кроме случая с Supabase: тогда задайте `SUPABASE_URL` и
+   `SUPABASE_SERVICE_ROLE_KEY` (см. «Хранилище Supabase»).
 5. Убедитесь, что `frontend/api/proxy.ts` попал в деплой: Vercel создаст Edge-функцию
    `/api/proxy` с allowlist хостов.
 6. Снимки должны быть в репозитории (каталог `frontend/public/data/snapshots/`), иначе при

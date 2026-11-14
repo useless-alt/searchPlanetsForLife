@@ -50,7 +50,7 @@ const controller = new PipelineController((result, progress, done) => {
 ctx.onmessage = (event: MessageEvent<WorkerRequest>) => {
   const request = event.data;
   if (request.type === 'start') {
-    void controller.start(Boolean(request.forceLive)).catch((err: unknown) => {
+    void controller.start(Boolean(request.forceLive), Boolean(request.preferRemote)).catch((err: unknown) => {
       post({ type: 'error', message: (err as Error).message ?? 'Неизвестная ошибка пайплайна' });
     });
     return;

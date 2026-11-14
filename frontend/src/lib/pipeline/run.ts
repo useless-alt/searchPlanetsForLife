@@ -10,6 +10,7 @@ import type {
 } from '@/types';
 import { getBackup, saveBackup } from '../cache/backups';
 import { loadSnapshot } from '../cache/snapshots';
+import { fetchCatalogSnapshots } from '../supabase/catalog';
 import { fetchExomercat } from '../sources/exomercat';
 import { fetchExoplanetEu } from '../sources/exoplanetEu';
 import { fetchGaia, extractGaiaIds, gaiaMap } from '../sources/gaia';
@@ -109,6 +110,20 @@ async function loadCached(source: SourceId): Promise<{ rows: Row[]; fetchedAt: s
   return { rows, fetchedAt: record.meta.fetchedAt };
 }
 
+/** Последняя выгрузка источника из Postgres (Supabase). */
+async function loadFromSupabase(
+  source: SourceId,
+): Promise<{ rows: Row[]; fetchedAt: string } | null> {
+  try {
+    const snapshots = await fetchCatalogSnapshots([source]);
+    const snapshot = snapshots[source];
+    if (!snapshot || !Array.isArray(snapshot.rows) || snapshot.rows.length === 0) return null;
+    return { rows: snapshot.rows, fetchedAt: snapshot.meta.fetchedAt };
+  } catch {
+    return null;
+  }
+}
+
 async function loadSource(
   source: SourceId,
   live: () => Promise<LiveFetch>,
@@ -177,6 +192,23 @@ async function loadSource(
       };
     }
 
+    const remote = await loadFromSupabase(source);
+    if (remote) {
+      logs.push(log(source, endpoint, 'используется выгрузка из Supabase Postgres', 'warn'));
+      return {
+        rows: remote.rows,
+        status: {
+          ...status,
+          state: 'supabase',
+          records: remote.rows.length,
+          fetchedAt: remote.fetchedAt,
+          tier: 'supabase',
+          error: message,
+        },
+        logs,
+      };
+    }
+
     const snapshot = await loadSnapshot(source);
     if (snapshot) {
       logs.push(log(source, endpoint, 'используется встроенный снимок', 'warn'));
@@ -194,7 +226,6 @@ async function loadSource(
         logs,
       };
     }
-
     logs.push(log(source, endpoint, 'данных нет — источник пропущен', 'error'));
     return {
       rows: [],
@@ -215,6 +246,8 @@ export class PipelineController {
   private diagnostics: string[] = [];
   private running = false;
   private pendingRefresh = false;
+  /** Выгрузки, полученные из Supabase Postgres (при preferRemote). */
+  private remote: Partial<Record<SourceId, { rows: Row[]; fetchedAt: string }>> = {};
   private readonly emit: ProgressReporter;
 
   constructor(emit: ProgressReporter) {
@@ -313,90 +346,158 @@ export class PipelineController {
     return this.raw.nasa.length > 0;
   }
 
-  async start(forceLive = false): Promise<void> {
+  /** Загружает выгрузки каталогов из Supabase Postgres (основной режим). */
+  private async loadRemoteCatalogs(): Promise<boolean> {
+    const ids: SourceId[] = [...CATALOGS, ...ENRICHERS];
+    try {
+      const snapshots = await fetchCatalogSnapshots(ids);
+      let any = false;
+      for (const source of ids) {
+        const snapshot = snapshots[source];
+        if (!snapshot || !Array.isArray(snapshot.rows) || snapshot.rows.length === 0) continue;
+        this.remote[source] = { rows: snapshot.rows, fetchedAt: snapshot.meta.fetchedAt };
+        this.raw[source] = snapshot.rows;
+        this.statuses[source] = {
+          ...this.statuses[source],
+          state: 'supabase',
+          records: snapshot.rows.length,
+          fetchedAt: snapshot.meta.fetchedAt,
+          tier: 'supabase',
+          schemaMissing: snapshot.meta.missingColumns ?? [],
+        };
+        any = true;
+      }
+      if (any) {
+        this.pushLogs([
+          log('pipeline', '-', `каталоги получены из Supabase Postgres (${Object.keys(this.remote).length})`, 'info'),
+        ]);
+      }
+      return any;
+    } catch (err) {
+      this.pushLogs([log('pipeline', '-', `Supabase: ${(err as Error).message}`, 'warn')]);
+      return false;
+    }
+  }
+
+  async start(forceLive = false, preferRemote = false): Promise<void> {
     if (this.running) {
       this.pendingRefresh = true;
       return;
     }
     this.running = true;
     try {
-      if (!forceLive) await this.previewFromCache();
+      if (preferRemote) {
+        await this.loadRemoteCatalogs();
+        this.build(false, 'Каталоги из Supabase');
+      } else if (!forceLive) {
+        await this.previewFromCache();
+      }
 
       // Этап A: NASA
-      this.statuses.nasa = initialStatus('nasa');
-      this.build(false, 'NASA pscomppars');
-      const nasa = await loadSource('nasa', async () => {
-        const r = await fetchNasa();
-        return { rows: r.rows, schemaMissing: r.schemaMissing };
-      }, [], { forceLive: true });
-      this.raw.nasa = nasa.rows;
-      this.statuses.nasa = nasa.status;
-      this.pushLogs(nasa.logs);
-      this.build(false, 'NASA pscomppars');
+      if (!this.remote.nasa) {
+        this.statuses.nasa = initialStatus('nasa');
+        this.build(false, 'NASA pscomppars');
+        const nasa = await loadSource('nasa', async () => {
+          const r = await fetchNasa();
+          return { rows: r.rows, schemaMissing: r.schemaMissing };
+        }, [], { forceLive: true });
+        this.raw.nasa = nasa.rows;
+        this.statuses.nasa = nasa.status;
+        this.pushLogs(nasa.logs);
+        this.build(false, 'NASA pscomppars');
+      }
 
       // Этап B: Exo-MerCat и Exoplanet.eu параллельно
-      this.statuses.exomercat = initialStatus('exomercat');
-      this.statuses.exoplanet_eu = initialStatus('exoplanet_eu');
-      this.build(false, 'Exo-MerCat и Exoplanet.eu');
-      const [exomercat, eu] = await Promise.all([
-        loadSource('exomercat', async () => {
-          const r = await fetchExomercat();
-          return { rows: r.rows, schemaMissing: r.schemaMissing };
-        }, [], { forceLive: true }),
-        loadSource('exoplanet_eu', async () => {
-          const r = await fetchExoplanetEu();
-          return { rows: r.rows, schemaMissing: r.schemaMissing };
-        }, [], { forceLive: true }),
-      ]);
-      this.raw.exomercat = exomercat.rows;
-      this.raw.exoplanet_eu = eu.rows;
-      this.statuses.exomercat = exomercat.status;
-      this.statuses.exoplanet_eu = eu.status;
-      this.pushLogs([...exomercat.logs, ...eu.logs]);
-      this.build(false, 'Слияние каталогов');
+      if (!this.remote.exomercat || !this.remote.exoplanet_eu) {
+        this.statuses.exomercat = initialStatus('exomercat');
+        this.statuses.exoplanet_eu = initialStatus('exoplanet_eu');
+        this.build(false, 'Exo-MerCat и Exoplanet.eu');
+        const [exomercat, eu] = await Promise.all([
+          this.remote.exomercat
+            ? Promise.resolve<SourceLoad>({
+                rows: this.remote.exomercat.rows,
+                status: this.statuses.exomercat,
+                logs: [],
+              })
+            : loadSource('exomercat', async () => {
+                const r = await fetchExomercat();
+                return { rows: r.rows, schemaMissing: r.schemaMissing };
+              }, [], { forceLive: true }),
+          this.remote.exoplanet_eu
+            ? Promise.resolve<SourceLoad>({
+                rows: this.remote.exoplanet_eu.rows,
+                status: this.statuses.exoplanet_eu,
+                logs: [],
+              })
+            : loadSource('exoplanet_eu', async () => {
+                const r = await fetchExoplanetEu();
+                return { rows: r.rows, schemaMissing: r.schemaMissing };
+              }, [], { forceLive: true }),
+        ]);
+        this.raw.exomercat = exomercat.rows;
+        this.raw.exoplanet_eu = eu.rows;
+        this.statuses.exomercat = exomercat.status;
+        this.statuses.exoplanet_eu = eu.status;
+        this.pushLogs([...exomercat.logs, ...eu.logs]);
+        this.build(false, 'Слияние каталогов');
+      }
 
       // Этап C: Gaia + SIMBAD по идентификаторам NASA
       const gaiaIds = extractGaiaIds(this.raw.nasa);
       const { simbadIds } = gazetteer(this.raw.nasa);
 
-      this.statuses.gaia = initialStatus('gaia');
-      this.statuses.simbad = initialStatus('simbad');
-      this.build(false, 'Gaia и SIMBAD');
+      if (!this.remote.gaia || !this.remote.simbad) {
+        this.statuses.gaia = initialStatus('gaia');
+        this.statuses.simbad = initialStatus('simbad');
+        this.build(false, 'Gaia и SIMBAD');
 
-      const [gaia, simbad] = await Promise.all([
-        gaiaIds.length === 0
-          ? Promise.resolve<SourceLoad>({
-              rows: [],
-              status: { ...initialStatus('gaia'), state: 'skipped', error: 'нет Gaia DR3 id в NASA' },
-              logs: [log('gaia', SOURCE_CONFIG.gaia.endpoint, 'нет Gaia DR3 id в NASA — источник пропущен', 'info')],
-            })
-          : loadSource('gaia', async () => {
-              const r = await fetchGaia(gaiaIds);
-              return { rows: r.rows, schemaMissing: r.schemaMissing };
-            }, [], { forceLive: true }),
-        simbadIds.length === 0
-          ? Promise.resolve<SourceLoad>({
-              rows: [],
-              status: { ...initialStatus('simbad'), state: 'skipped', error: 'нет Gaia/TIC id в NASA' },
-              logs: [log('simbad', SOURCE_CONFIG.simbad.endpoint, 'нет Gaia/TIC id в NASA — источник пропущен', 'info')],
-            })
-          : loadSource('simbad', async () => {
-              const r = await fetchSimbad(simbadIds);
-              return { rows: r.rows, schemaMissing: r.schemaMissing };
-            }, [], { forceLive: true }),
-      ]);
-      this.raw.gaia = gaia.rows;
-      this.raw.simbad = simbad.rows;
-      this.statuses.gaia = gaia.status;
-      this.statuses.simbad = simbad.status;
-      this.pushLogs([...gaia.logs, ...simbad.logs]);
+        const [gaia, simbad] = await Promise.all([
+          this.remote.gaia
+            ? Promise.resolve<SourceLoad>({
+                rows: this.remote.gaia.rows,
+                status: this.statuses.gaia,
+                logs: [],
+              })
+            : gaiaIds.length === 0
+              ? Promise.resolve<SourceLoad>({
+                  rows: [],
+                  status: { ...initialStatus('gaia'), state: 'skipped', error: 'нет Gaia DR3 id в NASA' },
+                  logs: [log('gaia', SOURCE_CONFIG.gaia.endpoint, 'нет Gaia DR3 id в NASA — источник пропущен', 'info')],
+                })
+              : loadSource('gaia', async () => {
+                  const r = await fetchGaia(gaiaIds);
+                  return { rows: r.rows, schemaMissing: r.schemaMissing };
+                }, [], { forceLive: true }),
+          this.remote.simbad
+            ? Promise.resolve<SourceLoad>({
+                rows: this.remote.simbad.rows,
+                status: this.statuses.simbad,
+                logs: [],
+              })
+            : simbadIds.length === 0
+              ? Promise.resolve<SourceLoad>({
+                  rows: [],
+                  status: { ...initialStatus('simbad'), state: 'skipped', error: 'нет Gaia/TIC id в NASA' },
+                  logs: [log('simbad', SOURCE_CONFIG.simbad.endpoint, 'нет Gaia/TIC id в NASA — источник пропущен', 'info')],
+                })
+              : loadSource('simbad', async () => {
+                  const r = await fetchSimbad(simbadIds);
+                  return { rows: r.rows, schemaMissing: r.schemaMissing };
+                }, [], { forceLive: true }),
+        ]);
+        this.raw.gaia = gaia.rows;
+        this.raw.simbad = simbad.rows;
+        this.statuses.gaia = gaia.status;
+        this.statuses.simbad = simbad.status;
+        this.pushLogs([...gaia.logs, ...simbad.logs]);
+      }
 
       this.build(true, 'Готово');
     } finally {
       this.running = false;
       if (this.pendingRefresh) {
         this.pendingRefresh = false;
-        void this.start(true);
+        void this.start(true, preferRemote);
       }
     }
   }

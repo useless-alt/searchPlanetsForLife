@@ -4,7 +4,7 @@ import type { PipelineResult, SourceId } from '@/types';
 import type { ProgressInfo } from '@/lib/pipeline/run';
 
 export type WorkerRequest =
-  | { type: 'start'; forceLive?: boolean }
+  | { type: 'start'; forceLive?: boolean; preferRemote?: boolean }
   | { type: 'use-backup'; source: SourceId; key: string };
 
 export interface WorkerProgressMessage {

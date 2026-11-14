@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Database, Download, History, RotateCcw, TerminalSquare } from 'lucide-react';
+import { Database, Download, History, RotateCcw, TerminalSquare, UploadCloud } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { getBackup, listBackupVersions, type BackupMeta } from '@/lib/cache/backups';
+import { fetchCatalogHealth, uploadCatalogSnapshot, type CatalogHealth } from '@/lib/supabase/catalog';
+import { rowsFromPayload } from '@/lib/pipeline/run';
 import type { SourceId, SourceStatus } from '@/types';
 import { formatDate } from '@/lib/utils';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog';
@@ -27,9 +29,13 @@ export function SourcesPanel({ open, onOpenChange }: { open: boolean; onOpenChan
   const result = useAppStore((s) => s.result);
   const rollback = useAppStore((s) => s.rollback);
   const setNotice = useAppStore((s) => s.setNotice);
+  const preferRemote = useAppStore((s) => s.preferRemote);
+  const setPreferRemote = useAppStore((s) => s.setPreferRemote);
   const [versions, setVersions] = useState<Record<string, { key: string; meta: BackupMeta }[]>>({});
   const [selected, setSelected] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
+  const [health, setHealth] = useState<CatalogHealth | null>(null);
+  const [writeKey, setWriteKey] = useState('');
 
   useEffect(() => {
     if (!open) return;
@@ -47,6 +53,10 @@ export function SourcesPanel({ open, onOpenChange }: { open: boolean; onOpenChan
       }
       setVersions(map);
       setSelected(chosen);
+    })();
+    void (async () => {
+      const state = await fetchCatalogHealth();
+      if (!cancelled) setHealth(state);
     })();
     return () => {
       cancelled = true;
@@ -78,6 +88,41 @@ export function SourcesPanel({ open, onOpenChange }: { open: boolean; onOpenChan
     }
   }
 
+  /** Выгрузка текущей резервной копии источника в Supabase Postgres. */
+  async function uploadToSupabase(source: SourceId): Promise<void> {
+    if (!writeKey) {
+      setNotice('Укажите ключ записи (SUPABASE_CATALOG_WRITE_KEY) в панели Supabase');
+      return;
+    }
+    setBusy(source);
+    try {
+      const key = selected[source];
+      const record = key ? await getBackup(source, key) : await getBackup(source);
+      const rows = record ? rowsFromPayload(record.payload) : null;
+      if (!record || !rows || rows.length === 0) {
+        setNotice(`Нет данных в резерве ${source} для выгрузки`);
+        return;
+      }
+      const result = await uploadCatalogSnapshot({
+        source,
+        rows,
+        endpoint: record.meta.endpoint,
+        fetchedAt: record.meta.fetchedAt,
+        origin: 'live',
+        schemaMissing: [],
+        sha256: record.meta.sha256,
+        writeKey,
+      });
+      if (result.ok) {
+        setNotice(`${source}: ${rows.length} записей загружено в Supabase`);
+      } else {
+        setNotice(`${source}: загрузка не выполнена — ${result.error ?? 'неизвестная ошибка'}`);
+      }
+    } finally {
+      setBusy(null);
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[min(960px,95vw)]">
@@ -86,10 +131,50 @@ export function SourcesPanel({ open, onOpenChange }: { open: boolean; onOpenChan
             <Database className="h-4 w-4 text-accent" /> Источники, резервы и диагностика
           </DialogTitle>
           <DialogDescription>
-            Каждый источник проходит уровни LIVE → IndexedDB → встроенный снимок → пропуск. Откат
-            применяет выбранную версию резерва в текущем сеансе; экспорт скачивает JSON.
+            Каждый источник проходит уровни LIVE → IndexedDB → Supabase (Postgres) → встроенный снимок →
+            пропуск. Откат применяет выбранную версию резерва в текущем сеансе; экспорт скачивает JSON.
           </DialogDescription>
         </DialogHeader>
+
+        <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] p-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className={`h-2 w-2 rounded-full ${
+                health === null ? 'bg-slate-600' : health.ok ? 'bg-emerald-400' : 'bg-rose-500'
+              }`}
+            />
+            <span className="text-sm font-medium text-slate-100">Supabase (Postgres)</span>
+            <span className="text-[11px] text-slate-400">
+              {health === null
+                ? 'проверка подключения…'
+                : health.ok
+                  ? `подключено${health.latencyMs ? `, ${health.latencyMs} мс` : ''}`
+                  : health.configured
+                    ? `недоступно: ${health.error}`
+                    : 'не настроено — задайте SUPABASE_URL и SUPABASE_SERVICE_ROLE_KEY'}
+            </span>
+            <input
+              type="password"
+              className="input ml-auto h-7 w-[220px]"
+              placeholder="Ключ записи (x-catalog-key)"
+              value={writeKey}
+              onChange={(e) => setWriteKey(e.target.value)}
+              aria-label="Ключ записи в Supabase"
+            />
+          </div>
+          <label className="mt-2 flex items-center gap-2 text-[11px] text-slate-400">
+            <input
+              type="checkbox"
+              checked={preferRemote}
+              onChange={(e) => setPreferRemote(e.target.checked)}
+            />
+            Брать каталоги из Postgres как из основного источника (без запросов к TAP)
+          </label>
+          <p className="mt-1.5 text-[11px] text-slate-500">
+            Ключ хранится только в памяти вкладки. Он совпадает с SUPABASE_CATALOG_WRITE_KEY на сервере.
+            Массовая выгрузка всех источников: <code className="text-slate-400">npm run upload:catalog</code>.
+          </p>
+        </div>
 
         <div className="space-y-2">
           {statuses.map((status) => {
@@ -150,6 +235,14 @@ export function SourcesPanel({ open, onOpenChange }: { open: boolean; onOpenChan
                       onClick={() => void exportBackup(status.source)}
                     >
                       <Download className="h-3 w-3" /> Экспорт
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={isExomast || busy === status.source || !writeKey}
+                      onClick={() => void uploadToSupabase(status.source)}
+                    >
+                      <UploadCloud className="h-3 w-3" /> В Supabase
                     </Button>
                   </div>
                 </div>

@@ -1,7 +1,7 @@
 /** Модель данных: сущность планеты, кандидаты полей, статусы источников. */
 
 export type SourceId = 'nasa' | 'exomercat' | 'exoplanet_eu' | 'gaia' | 'simbad' | 'exomast';
-export type DataTier = 'live' | 'cache' | 'snapshot';
+export type DataTier = 'live' | 'cache' | 'supabase' | 'snapshot';
 export type Origin = 'measured' | 'physics' | 'model';
 export type PlanetStatus = 'confirmed' | 'candidate' | 'unknown';
 export type FieldKey =
@@ -107,7 +107,7 @@ export interface PlanetEntity {
 export interface SourceStatus {
   source: SourceId;
   label: string;
-  state: 'live' | 'cache' | 'snapshot' | 'error' | 'pending' | 'skipped';
+  state: 'live' | 'cache' | 'supabase' | 'snapshot' | 'error' | 'pending' | 'skipped';
   records: number;
   fetchedAt: string | null;
   tier: DataTier | null;

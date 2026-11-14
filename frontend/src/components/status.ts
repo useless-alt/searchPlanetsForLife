@@ -13,6 +13,8 @@ export function statusLabel(status: SourceStatus): string {
       return 'Обновлено';
     case 'cache':
       return `Резервная копия от ${formatDate(status.fetchedAt)}`;
+    case 'supabase':
+      return `Supabase (Postgres) от ${formatDate(status.fetchedAt)}`;
     case 'snapshot':
       return `Встроенный снимок от ${formatDate(status.fetchedAt)}`;
     case 'error':
@@ -30,6 +32,8 @@ export function statusTone(state: SourceStatus['state']): string {
       return 'bg-emerald-400';
     case 'cache':
       return 'bg-amber-400';
+    case 'supabase':
+      return 'bg-violet-400';
     case 'snapshot':
       return 'bg-sky-400';
     case 'error':
@@ -47,6 +51,8 @@ export function statusBadgeClass(state: SourceStatus['state']): string {
       return 'border-emerald-400/30 bg-emerald-400/10 text-emerald-300';
     case 'cache':
       return 'border-amber-400/30 bg-amber-400/10 text-amber-200';
+    case 'supabase':
+      return 'border-violet-400/30 bg-violet-400/10 text-violet-200';
     case 'snapshot':
       return 'border-sky-400/30 bg-sky-400/10 text-sky-200';
     case 'error':
@@ -59,12 +65,13 @@ export function statusBadgeClass(state: SourceStatus['state']): string {
 }
 
 export function fallbackStatus(status: SourceStatus): boolean {
-  return status.state === 'cache' || status.state === 'snapshot';
+  return status.state === 'cache' || status.state === 'supabase' || status.state === 'snapshot';
 }
 
 export function tierLabel(tier: SourceStatus['tier']): string {
   if (tier === 'live') return 'LIVE';
   if (tier === 'cache') return 'IDB';
+  if (tier === 'supabase') return 'POSTGRES';
   if (tier === 'snapshot') return 'СНИМОК';
   return '—';
 }
