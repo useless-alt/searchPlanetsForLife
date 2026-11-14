@@ -1,6 +1,21 @@
 import type { ParamValue } from './provenance';
 
 /**
+ * Субиндексы, из которых складывается индекс (п. 2.2, 2.3).
+ *
+ * ESI_R — радиус; ESI_rho — плотность; ESI_ve — вторая космическая;
+ * ESI_S — поток излучения; ESI_T — температура поверхности; F_HZ — зона обитаемости.
+ */
+export type SubindexId = 'ESI_R' | 'ESI_rho' | 'ESI_ve' | 'ESI_S' | 'ESI_T' | 'F_HZ';
+
+/**
+ * Субиндексы адаптивного режима: n = 4 (U4).
+ *
+ *   1. «Адаптивный»: geomean(доступные из ESI_R, ESI_ρ, ESI_ve, F_HZ) · P_rocky · P_ecc · P_star · Q_data.
+ */
+export const ADAPTIVE_SUBINDICES: SubindexId[] = ['ESI_R', 'ESI_rho', 'ESI_ve', 'F_HZ'];
+
+/**
  * Флаги каскадного решателя пропусков (Уровни А/Б/В, п. 1).
  */
 export interface SolverFlags {
@@ -18,6 +33,10 @@ export interface SolverFlags {
   k: number;
   /** Число субиндексов n. */
   n: number;
+  /** Все поля строгого режима заданы и измерены (U19). */
+  strict_complete: boolean;
+  /** Доступность каждого субиндекса по данным (Уровень В). */
+  available: Record<SubindexId, boolean>;
 }
 
 /**

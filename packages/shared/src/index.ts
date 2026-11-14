@@ -14,5 +14,8 @@ export * from './types/index';
 export * from './constants/index';
 export * from './physics/provenance';
 export * from './physics/levelA';
+export * from './physics/levelB';
+export * from './physics/levelC';
+export * from './physics/solver';
 
 export const SHARED_PACKAGE_READY = true;

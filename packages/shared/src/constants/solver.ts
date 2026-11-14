@@ -2,6 +2,22 @@
  * Константы каскадного решателя пропусков (п. 1).
  */
 
+import type { RawParamKey } from '../types/planet';
+
+/**
+ * Поля, которые должны быть заданы и измерены, чтобы запись считалась
+ * «строгой» в режиме «Строгий научный» (U19).
+ */
+export const STRICT_REQUIRED_RAW: readonly RawParamKey[] = [
+  'pl_rade',
+  'pl_bmasse',
+  'pl_insol',
+  'pl_orbsmax',
+  'pl_orbeccen',
+  'st_teff',
+  'st_lum',
+];
+
 /** Эффективная температура Солнца [К]. */
 export const SUN_TEFF_K = 5772;
 
