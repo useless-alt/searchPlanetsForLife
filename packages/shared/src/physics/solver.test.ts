@@ -39,7 +39,9 @@ function makeRecord(overrides: Partial<Record<RawParamKey, ParamValue>> = {}): P
     aliases: [],
     hostname: 'Test Star',
     letter: 'b',
+    hostAliases: [],
     sources: ['nasa'],
+    warnings: [],
     params: rawParams(overrides),
   };
 }

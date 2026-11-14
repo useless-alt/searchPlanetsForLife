@@ -1,0 +1,4 @@
+pl_name,hostname,pl_letter,ra,dec,sy_dist,pl_rade,pl_bmasse,pl_orbsmax,pl_orbper,pl_orbeccen,pl_insol,pl_eqt,st_teff,st_rad,st_mass,st_lum
+"Kepler-442 b",Kepler-442,b,229.1064167,-19.2495699,370.5,1.16,2.36,0.4093,112.3053,0.4134,0.3831,233,5402,0.567,0.544,-0.5862
+"HD 209458, b","HD 209458
+(A)",b,220.729575,18.884107,48.3,1.38,0.69,0.04747,3.52474859,0.01,,,,,

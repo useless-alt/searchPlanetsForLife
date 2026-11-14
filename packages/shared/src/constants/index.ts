@@ -14,3 +14,4 @@ export * from './spectral';
 export * from './sources';
 export * from './backup';
 export * from './units';
+export * from './merge';

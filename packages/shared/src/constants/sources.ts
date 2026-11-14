@@ -69,3 +69,23 @@ export const SOURCE_PRIORITY: SourceId[] = [
   'simbad',
   'exomercat',
 ];
+
+/**
+ * Порядок источников звёздных параметров (задача 9, п. 7.3).
+ *
+ * Это единственное место, где задан порядок источников для полей звезды
+ * (`st_teff`, `st_rad`, `st_mass`, `st_lum`): Gaia — первичные измерения,
+ * далее Exo.MAST, NASA, Exoplanet.eu, SIMBAD, Exo-MerCat (по убыванию
+ * точности, п. 1.6).
+ *
+ * Exo.MAST в списке остаётся, хотя загружается лениво (п. 10.1.4, U6):
+ * приоритет относится к разрешению значения, а не к порядку загрузки.
+ */
+export const STAR_PARAM_PRIORITY: SourceId[] = [
+  'gaia',
+  'exomast',
+  'nasa',
+  'exoplanet_eu',
+  'simbad',
+  'exomercat',
+];

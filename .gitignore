@@ -20,10 +20,23 @@ archive/
 data/backups/*
 !data/backups/.gitkeep
 
+# Локальные архивы резервных копий (выгрузка в Supabase).
+data/archives/
+
+# Статический снимок каталога для GitHub Pages (собирается скриптом).
+apps/web/public/data/
+
+# Журнал ошибок загрузки — локальный append-only файл (U31).
+data/error-log.jsonl
+
+# Рабочие данные запущенного workspace-сервера (cwd = apps/server).
+apps/server/data/
+
 # Прочее окружение агента и служебные каталоги.
 agent-rules/
 .agent/
 .agents/
+.taste-skill/
 .vercel/
 build/
 __pycache__/

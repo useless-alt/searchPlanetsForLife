@@ -15,6 +15,10 @@
     "test": "vitest run",
     "typecheck": "tsc -b --noEmit packages/shared apps/server apps/web",
     "lint": "eslint . --ext .ts,.tsx",
+    "refresh": "npm run refresh -w @exo/server",
+    "refresh:backup": "npm run refresh && node scripts/upload-backups-to-supabase.mjs",
+    "build:pages": "node scripts/build-pages.mjs",
+    "supabase:upload": "node scripts/upload-backups-to-supabase.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },

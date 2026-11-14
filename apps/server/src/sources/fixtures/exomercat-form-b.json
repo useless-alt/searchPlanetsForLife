@@ -1,0 +1,62 @@
+{
+  "metadata": [
+    { "name": "exomercat_name" },
+    { "name": "nasa_name" },
+    { "name": "eu_name" },
+    { "name": "toi_name" },
+    { "name": "epic_name" },
+    { "name": "host" },
+    { "name": "letter" },
+    { "name": "main_id" },
+    { "name": "main_id_aliases" },
+    { "name": "main_id_ra" },
+    { "name": "main_id_dec" },
+    { "name": "mass" },
+    { "name": "r" },
+    { "name": "p" },
+    { "name": "a" },
+    { "name": "e" },
+    { "name": "status" }
+  ],
+  "data": [
+    [
+      "Kepler-442 b",
+      "Kepler-442 b",
+      "",
+      "",
+      "",
+      "Kepler-442",
+      "b",
+      "*   Kepler-442",
+      "",
+      "172.56",
+      "-5.31",
+      2.36,
+      1.16,
+      112.3053,
+      0.4093,
+      0.4134,
+      "confirmed"
+    ],
+    [
+      "TOI-700 d",
+      "",
+      "TOI-700 d",
+      "TOI-700 d",
+      "",
+      "TOI-700",
+      "d",
+      "TOI-700",
+      "[\"TOI-700\",\"TIC 150428135\"]",
+      "",
+      "",
+      1.72,
+      1.073,
+      37.426,
+      0.163,
+      0.37,
+      "candidate"
+    ],
+    ["", "", "", "", "", "Планета без имени", "", "", "", "", "", 1.0, null, null, null, null, ""]
+  ]
+}

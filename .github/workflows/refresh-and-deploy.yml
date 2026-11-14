@@ -1,0 +1,98 @@
+name: Refresh data and deploy site
+
+# 1) Каждые 3 часа: загрузка источников → копии → Supabase → сборка → GitHub Pages.
+# 2) На push в main: то же самое (данные обновляются, страница пересобирается).
+# 3) Вручную: Actions → Refresh data and deploy site → Run workflow.
+on:
+  schedule:
+    - cron: '0 */3 * * *'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/**'
+      - 'packages/**'
+      - 'scripts/**'
+      - 'supabase/**'
+      - '.github/workflows/refresh-and-deploy.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Один прогон за раз: новый не стартует, пока идёт предыдущий.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  refresh-and-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # На чистом runner локальных копий нет: забираем их из Supabase,
+      # чтобы конвейер мог использовать fallback (п. 8.2).
+      - name: Restore backups from Supabase
+        run: node scripts/restore-backups-from-supabase.mjs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      # Обновление источников и запись копий + слитого снимка.
+      # При неполном обновлении скрипт выходит с кодом 1 и ничего не заменяет.
+      - name: Refresh catalog
+        run: npm run refresh
+        env:
+          BACKUP_DIR: data/backups
+          REFRESH_REQUIRE_SOURCES: nasa,exoplanet_eu,exomercat,gaia,simbad
+
+      # Выгрузка в Supabase: новые снимки заменяют прежние только после
+      # успешной загрузки всех строк.
+      - name: Upload to Supabase
+        run: node scripts/upload-backups-to-supabase.mjs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_KEEP_VERSIONS: '1'
+
+      # Слитый снимок → файл в сборке (читается staticClient на странице),
+      # затем сборка Vite в статическом режиме.
+      - name: Build site for GitHub Pages
+        run: node scripts/build-pages.mjs --base=/${{ github.event.repository.name }}/
+
+      - name: Upload pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: apps/web/dist
+
+      - name: Upload merged snapshot as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: catalog-merged
+          path: apps/server/data/backups/merged/latest.json
+          retention-days: 7
+          if-no-files-found: error
+
+  deploy:
+    needs: refresh-and-build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

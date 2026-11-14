@@ -45,6 +45,7 @@ import {
   SOURCES,
   SOURCE_PRIORITY,
   SPECTRAL_THRESHOLDS,
+  STAR_PARAM_PRIORITY,
   STAR_TEFF_M_CLASS,
   SUN_TEFF_K,
   T_EQ_COEFF,
@@ -147,6 +148,20 @@ describe('реестр источников (п. 5, 5.1)', () => {
       'simbad',
       'exomercat',
     ]);
+  });
+
+  it('порядок источников звёздных параметров задан один раз (STAR_PARAM_PRIORITY)', () => {
+    expect(STAR_PARAM_PRIORITY).toEqual([
+      'gaia',
+      'exomast',
+      'nasa',
+      'exoplanet_eu',
+      'simbad',
+      'exomercat',
+    ]);
+    expect(STAR_PARAM_PRIORITY).toHaveLength(SOURCES.length);
+    // Каждый источник из реестреа встречается в приоритете ровно один раз.
+    expect(new Set(STAR_PARAM_PRIORITY).size).toBe(SOURCES.length);
   });
 });
 
