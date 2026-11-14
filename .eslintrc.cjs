@@ -19,14 +19,7 @@ module.exports = {
   },
   plugins: ['@typescript-eslint'],
   extends: ['eslint:recommended', 'plugin:@typescript-eslint/recommended'],
-  ignorePatterns: [
-    'node_modules/',
-    'dist/',
-    'coverage/',
-    'archive/',
-    'data/',
-    '*.cjs',
-  ],
+  ignorePatterns: ['node_modules/', 'dist/', 'coverage/', 'archive/', 'data/', '*.cjs'],
   rules: {
     '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
     '@typescript-eslint/consistent-type-imports': 'warn',
