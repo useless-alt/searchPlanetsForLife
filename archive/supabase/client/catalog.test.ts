@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { readConfig } from '../../../api/supabase-handler';
-import { parseEnvFile } from '../../../vite.dev-proxy';
+import { readConfig } from '../api/supabase-handler';
+import { parseEnvFile } from '../vite.dev-proxy';
 
 describe('readConfig', () => {
   it('возвращает null, если переменные не заданы', () => {

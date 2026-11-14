@@ -54,7 +54,7 @@ if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
 }
 
 const ref = new URL(env.SUPABASE_URL).hostname.split('.')[0];
-const sql = fs.readFileSync(path.join(repo, 'supabase', 'schema.sql'), 'utf8');
+const sql = fs.readFileSync(path.join(repo, 'schema.sql'), 'utf8');
 
 const response = await fetch(`https://api.supabase.com/v1/projects/${ref}/database/query`, {
   method: 'POST',

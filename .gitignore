@@ -15,6 +15,6 @@ agent-rules/
 prompt.txt
 заметки.md
 notes.md
-# Сырые выгрузки источников (data/backups) не коммитим.
-# Встроенные снимки frontend/public/data/snapshots/ коммитятся для деплоя.
+# Резервные копии источников (data/backups) не коммитим: это рабочее
+# хранилище сервера (apps/server), а не часть репозитория.
 /data/

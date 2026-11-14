@@ -1,10 +1,9 @@
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import path from 'node:path';
-import { devProxyPlugin } from './vite.dev-proxy';
 
 export default defineConfig({
-  plugins: [react(), devProxyPlugin()],
+  plugins: [react()],
   resolve: {
     alias: { '@': path.resolve(__dirname, 'src') },
   },

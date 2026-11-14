@@ -5,7 +5,7 @@
  * которая использует service-role ключ из окружения сервера.
  */
 
-import type { SourceId } from '@/types';
+import type { SourceId } from './types';
 
 /**
  * Строка выгрузки каталога (сырой объект из источника).

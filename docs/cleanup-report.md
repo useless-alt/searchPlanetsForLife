@@ -316,7 +316,7 @@
 | 3 | Node.js | 18+ | ≥ 20 | на 2 majors ниже | **Принять 1.2.** Обновить `engines` в манифестах и образы CI/deploy |
 | 4 | Менеджер пакетов | npm, один `package.json`, без workspaces | npm workspaces | черновик не монорепозиторий | **Принять 1.2.** npm уже совпадает — переносить менеджер не нужно, добавить только `workspaces` и корневой `package-lock.json` |
 | 5 | Серверная часть | запросы к TAP идут **из браузера**, HTTP-источники — через Edge-прокси `/api/proxy` (обход CORS) | `apps/server` (Node + Fastify) с адаптерами источников | черновик — клиентская загрузка + Edge-прокси; 1.2 — серверная | **Принять 1.2.** `/api/proxy` и `api/proxy-handler.ts` уже удалены; адаптеры (`src/lib/sources/*`) переносятся в `apps/server` вместе с `transport.ts` и `schema.ts` |
-| 6 | Supabase | `@supabase/supabase-js` в Vercel Edge-функции (`runtime = edge`) | сервер на Node/Fastify | Edge-функция → обычный Fastify-маршрут | **Принять 1.2** (перенести обработчик в `apps/server`), **но схему и RLS оставить без изменений** — они корректны и для Node-сервера. Версию `@supabase/supabase-js` 2.119.0 перенести |
+| 6 | Supabase | `@supabase/supabase-js` в Vercel Edge-функции (`runtime = edge`) | **вне объёма работ** (1.4: «БД в ТЗ нет», п. 8.5 не входит в план) | черновик — клиент+Edge-функция с БД; 1.2 — хранение только JSON-файлами | **Принять 1.2:** код вынесен в `archive/supabase/` (вне сборки и workspaces). Версию `@supabase/supabase-js` 2.119.0 и схему с RLS сохранить на случай возврата фичи — см. §10 |
 | 7 | Резервные копии | IndexedDB в браузере (`idb`), ротация 5 версий + `public/data/snapshots/*.json` | файловая система сервера `data/backups/<source>/` | черновик — клиентский кэш; 1.2 — серверный | **Принять 1.2.** `lib/cache/*` удалён; копии на диске сервера. Публичные снимки (~20 МБ) — перенести на сервер или загрузить в Supabase и убрать из git (см. §7) |
 | 8 | Тяжёлые расчёты | module Web Worker в `src/workers/` | пересчёт в Web Worker в `apps/web` | способ совпадает | **Принять 1.2.** Типы сообщений (`workers/messages.ts`) — кандидат на `packages/shared` |
 | 9 | 3D | `three` 0.169 + `@react-three/fiber` 8.17 + `@react-three/drei` 9.114 | «Three.js» (R3F не указан) | черновик — R3F-обёртка | **Принять 1.2 по сути**, но уточнить: перенести связку R3F 8 + drei 9 (совместима с React 18) или писать на чистом three. Версии зафиксированы в §1.1 |
@@ -338,21 +338,21 @@
 
 | Из черновика | Куда в 1.2 | Комментарий |
 |---|---|---|
-| `frontend/api/supabase-handler.ts` | `apps/server` (маршрут `/api/catalog`) | логика чтения/записи и работа с ключом — без изменений |
-| `frontend/api/catalog.ts` | `apps/server` | Edge-обёртка больше не нужна |
-| `supabase/schema.sql` | `supabase/schema.sql` (или `apps/server/db/`) | схема и RLS без изменений |
-| `frontend/scripts/upload-catalog.mjs` | `apps/server/scripts/` или корневой `scripts/` | читает снимки; в 1.2 снимки берутся с сервера |
-| `scripts/apply-supabase-schema.mjs`, `scripts/check-supabase-keys.mjs` | `scripts/` (корень монорепо) | без изменений |
+| `frontend/api/supabase-handler.ts` | `archive/supabase/` → при возврате — `apps/server` | логика чтения/записи и работа с ключом; вне объёма работ по 1.4 (§10) |
+| `frontend/api/catalog.ts` | `archive/supabase/` → при возврате — `apps/server` | Edge-обёртка больше не нужна |
+| `supabase/schema.sql` | `archive/supabase/schema.sql` | схема и RLS сохранены без изменений |
+| `frontend/scripts/upload-catalog.mjs` | `archive/supabase/scripts/` | читает снимки; в 1.2 снимки берутся с сервера |
+| `scripts/apply-supabase-schema.mjs`, `scripts/check-supabase-keys.mjs` | `archive/supabase/scripts/` | без изменений по сути |
 | `src/lib/sources/*` | `apps/server` (адаптеры) | нужны адаптерам источников |
 | `src/lib/calc/*`, `src/lib/pipeline/*`, `src/config.ts` | `packages/shared` | чистая физика, индексы, ранжирование |
-| `src/types.ts` | `packages/shared` | доменные типы |
+| `src/types.ts` | `archive/supabase/client/types.ts` | прежние доменные типы черновика; новые — в `packages/shared/src/types/` (Задача 2) |
 | `src/workers/messages.ts` | `packages/shared` | контракт Worker ↔ UI |
 
 ---
 
 ## 7. Замечания по данным и риски
 
-1. **Снимки каталогов (≈20 МБ) оставлены в `frontend/public/data/snapshots/`.** Единственный оставшийся их потребитель — сохранённая функция выгрузки `npm run upload:catalog`. В 1.2 источником снимков должен стать `apps/server` (`data/backups/<source>/`), после чего файлы стоит убрать из git и хранить только в Postgres. Учтите: `data/backups/*/latest.json` сейчас в формате «массив строк», а `upload-catalog.mjs` ожидает `{meta, rows}` — формат нужно привести к общему при переносе.
+1. **Снимки каталогов (≈20 МБ) перенесены из git в `data/backups/<source>/`.** Формат сохранён — `{meta, rows}` (в `meta`: `source`, `fetchedAt`, `recordCount`, `endpoint`, `schemaVersion`, `missingColumns`, `origin`). Записаны `latest.json` и копия `20261114_172935.json` для nasa (6470), exomercat (17617), exoplanet_eu (8477), gaia (2000), simbad (5000). Прежние локальные файлы `data/backups/<source>/*.json` (голый массив строк, от удалённого `scripts/fetch-sources.ps1`) не потеряны: каждый `latest.json` был побайтово равен свежей датированной копии, а сами датированные файлы остались на месте. `data/` — вне git (`.gitignore`), как и предусмотрено структурой 1.3.
 2. **README.md и `docs/*` описывают удалённый черновик.** Сохранены как носители методики (формулы, эталон «Земля», калибровочные значения) — переписываются в 1.2.
 3. **`frontend/index.html`** остаётся минимальной оболочкой без точки входа; `vite build` собирает пустую страницу. Полноценная страница появится в `apps/web`.
 4. **`backend/` и `ml/`** — пустые плейсхолдеры черновика; в 1.2 их роль выполняют `apps/server` и `packages/shared`. Решение об удалении — за задачей 1.2.
@@ -363,12 +363,12 @@
 
 | Проверка | Результат |
 |---|---|
-| Открытые секреты в отслеживаемых файлах | **не найдено**: в `.env.example`, `frontend/.env.example`, `supabase/schema.sql`, скриптах и коде — только плейсхолдеры (`sb_secret_xxxxx`, `sbp_xxx`, `sb_secret_x` в тестах) |
+| Открытые секреты в отслеживаемых файлах | **не найдено**: в шаблонах окружения (`archive/supabase/env.example`, `env.root.example`), `schema.sql`, скриптах и коде — только плейсхолдеры (`sb_secret_xxxxx`, `sbp_xxx`, `sb_secret_x` в тестах) |
 | `frontend/.env.local` (реальные ключи) | **не читался, не копировался, не выводился и не закоммичен**; файл в `.gitignore` (`git check-ignore` подтверждает) |
 | Коммиты задачи | коммиты содержат только код, конфиги и документацию; файлов с ключами нет |
 | Отчёт | содержит только имена переменных окружения и плейсхолдеры, значений ключей нет |
 
-Рекомендация на будущее: при переезде на монорепо перенести реальные ключи в `apps/server/.env`, а `frontend/.env.local` удалить; в Vercel задать `SUPABASE_URL` и `SUPABASE_SERVICE_ROLE_KEY` как переменные окружения проекта.
+Рекомендация на будущее: если Supabase-фича вернётся в проект, реальные ключи переносятся в `apps/server/.env`, а `frontend/.env.local` удаляется; в Vercel задать `SUPABASE_URL` и `SUPABASE_SERVICE_ROLE_KEY` как переменные окружения проекта. В текущем объёме работ (1.4) переменных Supabase в проекте нет.
 
 ---
 
@@ -379,44 +379,47 @@
 | Команда | Результат |
 |---|---|
 | `npm run typecheck` (`tsc --noEmit`) | без ошибок |
-| `npm run test` (`vitest run`) | 1 файл, 4 теста — успешно (`src/lib/supabase/catalog.test.ts`) |
+| `npm run test` (`vitest run --passWithNoTests`) | тестовых файлов в `frontend/` не осталось (тест Supabase перенесён в `archive/`), код возврата 0 |
 | `npm run build` (`tsc --noEmit && vite build`) | успешно, собран пустой shell (`dist/index.html`, 0.51 kB) |
 
-### 9.2 Оставшиеся отслеживаемые файлы (33)
+### 9.2 Оставшиеся отслеживаемые файлы (31)
 
 ```
-.env.example
 .gitignore
 README.md
+archive/README.md
+archive/supabase/api/catalog.ts
+archive/supabase/api/supabase-handler.ts
+archive/supabase/client/catalog.test.ts
+archive/supabase/client/catalog.ts
+archive/supabase/client/types.ts
+archive/supabase/env.example
+archive/supabase/env.root.example
+archive/supabase/schema.sql
+archive/supabase/scripts/apply-supabase-schema.mjs
+archive/supabase/scripts/check-supabase-keys.mjs
+archive/supabase/scripts/upload-catalog.mjs
+archive/supabase/vite.dev-proxy.ts
 backend/.gitkeep
+docs/cleanup-report.md
 docs/data-sources.md
 docs/json-extraction.md
+docs/project-context.md
+docs/roadmap.md
 exoplanet-prompt-v3-oneshot.md
-frontend/.env.example
 frontend/.gitignore
 frontend/.gitkeep
-frontend/api/catalog.ts
-frontend/api/supabase-handler.ts
 frontend/index.html
 frontend/package-lock.json
 frontend/package.json
 frontend/postcss.config.js
-frontend/public/data/snapshots/{exomercat,exoplanet_eu,gaia,nasa,simbad}.json
-frontend/scripts/upload-catalog.mjs
-frontend/src/lib/supabase/catalog.test.ts
-frontend/src/lib/supabase/catalog.ts
-frontend/src/types.ts
 frontend/tailwind.config.js
 frontend/tsconfig.json
 frontend/vite.config.ts
-frontend/vite.dev-proxy.ts
 ml/.gitkeep
-scripts/apply-supabase-schema.mjs
-scripts/check-supabase-keys.mjs
-supabase/schema.sql
 ```
 
-Не отслеживаются (в `.gitignore`): `.agents/`, `data/`, `frontend/.env.local`, `frontend/.vercel/`, `frontend/node_modules/`.
+Не отслеживаются (в `.gitignore`): `.agents/`, `data/` (резервные копии), `frontend/.env.local` (ключи), `frontend/.vercel/`, `frontend/node_modules/`.
 
 ### 9.3 Чек-лист критериев приёмки
 
@@ -424,9 +427,41 @@ supabase/schema.sql
 |---|---|
 | Тег `pre-rewrite` существует | ✅ `pre-rewrite` → `10ad6ab` |
 | Работа ведётся в ветке `rewrite` | ✅ все изменения — в `rewrite`; `main` не изменялся |
-| Все файлы из «keep» на месте | ✅ Supabase-код (9 файлов), конфигурация и окружение (11 файлов), доменные типы, `.env.example`, `.gitignore` — на месте (§2.2, §2.3) |
+| Все файлы из «keep» на месте | ✅ Supabase-код (9 файлов), конфигурация и окружение (11 файлов), доменные типы, `.env.example`, `.gitignore` — на месте (§2.2, §2.3); после решений по глобальному контексту Supabase-часть вынесена в `archive/supabase/` без потери кода (§10) |
 | Компонентов и страниц старого сайта нет | ✅ удалены все 22 UI-файла, `App.tsx`, `main.tsx`, `index.css`, оба 3D-модуля (§2.5–§2.7) |
 | В отчёте есть описание Supabase-фичи | ✅ §5: таблицы, RLS, что/когда записывается и читается, переменные окружения |
 | В отчёте есть сравнение стеков | ✅ §6: 18 расхождений черновика и стека 1.2 + рекомендации |
 | Секретов в отчёте и коммитах нет | ✅ §8 |
-| Новый код не написан | ✅ изменены только 4 существующих файла (адаптация зависимостей) и `package.json`; новых файлов кода нет |
+| Новый код не написан | ✅ изменены только существующие файлы (адаптация зависимостей) и `package.json`; новых файлов кода нет, добавлены только документы (`docs/project-context.md`, `docs/roadmap.md`, `archive/README.md`) |
+
+---
+
+## 10. Решения, принятые после зачистки (глобальный контекст проекта)
+
+Глобальный контекст (п. 1.4) прямо говорит: «Аутентификации, ролей и БД в ТЗ нет… П. 8.5 (Supabase) помечен „в текущий объём работ не входит“, в план не включён», а структура 1.3 предусматривает единственное хранилище — `data/backups/<source>/`. Это расходится с решением Задачи 0 (весь Supabase-контур оставался в рабочем дереве), поэтому применены следующие правки.
+
+### 10.1 Supabase-фича вынесена в `archive/supabase/`
+
+| Было | Стало |
+|---|---|
+| `supabase/schema.sql` | `archive/supabase/schema.sql` |
+| `frontend/api/catalog.ts`, `frontend/api/supabase-handler.ts` | `archive/supabase/api/` |
+| `frontend/src/lib/supabase/catalog.ts`, `catalog.test.ts` | `archive/supabase/client/` |
+| `frontend/src/types.ts` (прежние доменные типы) | `archive/supabase/client/types.ts` |
+| `frontend/scripts/upload-catalog.mjs`, `scripts/apply-supabase-schema.mjs`, `scripts/check-supabase-keys.mjs` | `archive/supabase/scripts/` |
+| `frontend/vite.dev-proxy.ts` (dev-роут `/api/catalog`) | `archive/supabase/vite.dev-proxy.ts` |
+| `.env.example`, `frontend/.env.example` | `archive/supabase/env.root.example`, `env.example` |
+
+Следствия: `frontend/package.json` больше не зависит от `@supabase/supabase-js`; `frontend/vite.config.ts` больше не подключает `devProxyPlugin`; архивный код не участвует в сборке, тестах и workspaces монорепо. Поправлены только относительные пути импортов (механика переноса): `client/catalog.ts` → `./types`, `client/catalog.test.ts` → `../api/supabase-handler`, `../vite.dev-proxy`, `scripts/apply-supabase-schema.mjs` → `schema.sql` в новом расположении.
+
+Реальные ключи остались в `frontend/.env.local` — файл вне git, не читался и не копировался.
+
+### 10.2 Снимки каталогов перенесены в `data/backups/`
+
+`frontend/public/data/snapshots/*.json` (≈20 МБ) удалены из git; содержимое перенесено в `data/backups/<source>/latest.json` + копия `20261114_172935.json` с сохранением метаданных (`{meta, rows}`). Каталог `frontend/public/` удалён. Формат и объёмы: nasa 6470, exomercat 17617, exoplanet_eu 8477, gaia 2000, simbad 5000 записей.
+
+### 10.3 Что это меняет для Задачи 1
+
+- `frontend/` остаётся только «чехлом» сборочной конфигурации (`vite.config.ts`, `tailwind.config.js`, `postcss.config.js`, `tsconfig.json`, `index.html`, `package.json`) — эти файлы переезжают в `apps/web` при создании монорепо.
+- Корневого `.env.example` в репозитории сейчас нет: шаблоны с переменными Supabase перенесены в архив. Новый корневой `.env.example` создаётся в Задаче 1 (переменные сервера и веб-приложения).
+- `data/backups/` уже в `.gitignore` и готов к тому, чтобы его заполнял `apps/server` (Задача 7).

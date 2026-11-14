@@ -7,13 +7,8 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "test": "vitest run",
-    "typecheck": "tsc --noEmit",
-    "upload:catalog": "node scripts/upload-catalog.mjs",
-    "supabase:schema": "node ../scripts/apply-supabase-schema.mjs"
-  },
-  "dependencies": {
-    "@supabase/supabase-js": "^2.119.0"
+    "test": "vitest run --passWithNoTests",
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@types/node": "^22.9.0",
