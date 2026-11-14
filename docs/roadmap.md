@@ -50,3 +50,4 @@
 | 0 | ✅ Аудит и зачистка черновика — `docs/cleanup-report.md`, ветка `rewrite`, тег `pre-rewrite` |
 | 1 | ✅ Монорепо, конфиги, структура папок — `package.json` (workspaces), `tsconfig.base.json`, ESLint/Prettier, Vitest-workspace, `packages/shared`, `apps/server` (Fastify + `/api/health`), `apps/web` (Vite + React) |
 | 2 | ✅ Доменные типы и каталог констант — `packages/shared/src/types/*` (provenance, planet, solver, scoring, settings, sources), `packages/shared/src/constants/*` (esi, koppa, penalties, quality, solver, spectral, sources, backup, units), 26 тестов констант |
+| 3 | ✅ Physics Solver, Уровень А — `packages/shared/src/physics/provenance.ts` (makeParam, nullParam, derivedProvenance) и `levelA.ts` (L, d, P, S, T_eq, rho + агрегатор applyLevelA), 40 тестов |
