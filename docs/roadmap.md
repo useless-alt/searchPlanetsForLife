@@ -48,5 +48,5 @@
 | ID | Статус |
 |---|---|
 | 0 | ✅ Аудит и зачистка черновика — `docs/cleanup-report.md`, ветка `rewrite`, тег `pre-rewrite` |
-| 1 | ⏳ ожидает промпта-задачи |
+| 1 | ✅ Монорепо, конфиги, структура папок — `package.json` (workspaces), `tsconfig.base.json`, ESLint/Prettier, Vitest-workspace, `packages/shared`, `apps/server` (Fastify + `/api/health`), `apps/web` (Vite + React) |
 | 2–31 | ⏳ ожидают промптов-задач |

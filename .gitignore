@@ -1,20 +1,31 @@
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Локальное окружение с секретами не коммитим.
 .env
 .env.local
 .env.*.local
-node_modules/
-__pycache__/
-*.pyc
-.DS_Store
-dist/
-build/
+
+# Рабочие материалы вне git (промпт, заметки).
+prompt.txt
+заметки.md
+notes.md
+
+# Архивный код черновика (не участвует в сборке).
+archive/
+
+# Резервные копии источников не коммитим, кроме плейсхолдера каталога.
+data/backups/*
+!data/backups/.gitkeep
+
+# Прочее окружение агента и служебные каталоги.
 agent-rules/
 .agent/
 .agents/
 .vercel/
-# Локальные рабочие материалы: промпты и заметки не коммитим.
-prompt.txt
-заметки.md
-notes.md
-# Резервные копии источников (data/backups) не коммитим: это рабочее
-# хранилище сервера (apps/server), а не часть репозитория.
-/data/
+build/
+__pycache__/
+*.pyc
+.DS_Store
