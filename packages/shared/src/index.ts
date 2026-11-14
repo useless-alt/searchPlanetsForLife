@@ -17,5 +17,10 @@ export * from './physics/levelA';
 export * from './physics/levelB';
 export * from './physics/levelC';
 export * from './physics/solver';
+export * from './indices/esi';
+export * from './indices/hz';
+export * from './indices/penalties';
+export * from './indices/quality';
+export * from './indices/indexes';
 
 export const SHARED_PACKAGE_READY = true;
