@@ -58,17 +58,15 @@ powershell -ExecutionPolicy Bypass -File scripts\install-scheduled-task.ps1 -Rem
 
 ### Вариант 2 — GitHub Actions
 
-Файл `.github/workflows/refresh-and-deploy.yml`: cron `0 */3 * * *` (UTC),
-ручной запуск (`workflow_dispatch`) и запуск на push в `main`.
+Файл `.github/workflows/refresh-data.yml`: cron `0 */3 * * *` (UTC) и ручной
+запуск (`workflow_dispatch`).
 
 Что делает один прогон:
 1. забирает резервные копии из Supabase (`scripts/restore-backups-from-supabase.mjs`) —
    на чистом runner их нет, а конвейеру нужен fallback;
 2. обновляет каталог (`npm run refresh`);
 3. выгружает результат в Supabase;
-4. собирает сайт (`node scripts/build-pages.mjs`) — слитый снимок попадает
-   в сборку как `data/catalog.json`;
-5. публикует сборку на GitHub Pages.
+4. прикладывает слитый снимок артефактом прогона (7 дней хранения).
 
 Особенности:
 - расписание GitHub срабатывает **только из ветки по умолчанию** — файл
@@ -78,34 +76,35 @@ powershell -ExecutionPolicy Bypass -File scripts\install-scheduled-task.ps1 -Rem
   `SUPABASE_SERVICE_ROLE_KEY` (Settings → Secrets and variables → Actions);
 - `concurrency` не даёт двум прогонам идти одновременно;
 - если обновление неполное (источник не ответил и копии нет), workflow
-  падает и **не публикует** новую версию — на сайте остаются прежние данные.
+  падает и **ничего не заменяет** — в Supabase остаются прежние данные.
 
-## Сайт на GitHub Pages
+## Статический режим (задел под GitHub Pages)
+
+Сейчас не используется: сайт запускается обычной сборкой (`npm run build`)
+рядом с `apps/server`. Код оставлен, чтобы позже можно было отдать страницу
+как статику без сервера.
 
 В статическом режиме сайт не обращается к серверу: при сборке в него
 кладётся `data/catalog.json` (его собирает `scripts/prepare-static-data.mjs`
 из `merged/latest.json`), а клиент `apps/web/src/api/staticClient.ts`
 читает этот файл вместо `/api/catalog`.
 
-| Что | Как на Pages |
+| Что | Как в статике |
 |---|---|
 | Каталог и рейтинг | полностью работает, данные — из файла сборки |
 | Панель источников | работает: статусы берутся из самого снимка |
-| «Обновить данные» | перечитывает файл; новые данные появляются после прогона Actions и пересборки |
+| «Обновить данные» | перечитывает файл; новые данные появляются после обновления данных и пересборки |
 | Журнал ошибок | пуст: серверного `error-log.jsonl` на странице нет |
 | Ленивый Exo.MAST (п. 9.3) | недоступен — нужен серверный прокси |
 
-Подготовка репозитория (один раз):
-1. репозиторий должен быть **публичным** (Pages для приватных требует Pro)
-   либо включён подходящий тариф;
-2. Settings → Pages → Source: **GitHub Actions**;
-3. Settings → Secrets and variables → Actions: добавить `SUPABASE_URL`
-   и `SUPABASE_SERVICE_ROLE_KEY`;
-4. слить ветку с этими файлами в `main` — дальше всё идёт по расписанию.
+Если понадобится вернуть публикацию, к шагам выше добавляются:
+репозиторий должен быть **публичным** (Pages для приватных требует Pro),
+Settings → Pages → Source: **GitHub Actions**, а в workflow — сборка
+`node scripts/build-pages.mjs --base=/<repo>/`, `upload-pages-artifact`
+и `deploy-pages`.
 
-Размер: `data/catalog.json` — около 49 МБ на сборку. GitHub Pages сжимает
-JSON при отдаче (~3 МБ по сети), лимиты Pages (1 ГБ на сайт, 100 МБ на файл)
-соблюдаются.
+Размер: `data/catalog.json` — около 49 МБ на сборку; хостинг сжимает JSON
+при отдаче (~3 МБ по сети).
 
 Локальная проверка статической сборки:
 

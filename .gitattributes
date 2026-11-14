@@ -1,0 +1,21 @@
+# Нормализация переносов строк.
+#
+# В git и в рабочем дереве — LF. Без этого core.autocrlf=true на Windows
+# подменяет концы строк в рабочем дереве: Prettier (endOfLine: lf) считает
+# весь репозиторий неотформатированным, а тесты с многострочными строками
+# (например, CSV-фикстура в tap.test.ts) получают \r\n вместо \n.
+* text=auto eol=lf
+
+# Windows-скрипты запускаются через cmd/PowerShell — им привычнее CRLF.
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Бинарные файлы не трогаем.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
