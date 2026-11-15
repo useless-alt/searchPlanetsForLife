@@ -42,3 +42,11 @@ build/
 __pycache__/
 *.pyc
 .DS_Store
+
+# --- 27a: кадры дизайн-ревизии и собранная заглушка каталога ---
+docs/screens/
+e2e/fixtures/catalog.json
+
+# --- Артефакты прогонов: отчёты Playwright и временные файлы отладки ---
+.e2e-results/
+.tmp/

@@ -12,22 +12,31 @@
   "scripts": {
     "dev": "concurrently -n server,web -c blue,magenta \"npm run dev -w @exo/server\" \"npm run dev -w @exo/web\"",
     "build": "npm run build --workspaces --if-present",
+    "start": "npm run build && npm run start -w @exo/server",
     "test": "vitest run",
     "typecheck": "tsc -b --noEmit packages/shared apps/server apps/web",
     "lint": "eslint . --ext .ts,.tsx",
     "refresh": "npm run refresh -w @exo/server",
+    "data:demo": "node scripts/make-demo-snapshot.mjs",
     "refresh:backup": "npm run refresh && node scripts/upload-backups-to-supabase.mjs",
     "build:pages": "node scripts/build-pages.mjs",
     "supabase:upload": "node scripts/upload-backups-to-supabase.mjs",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "e2e": "playwright test -c e2e/playwright.config.ts",
+    "e2e:headed": "playwright test -c e2e/playwright.config.ts --headed",
+    "design:shots": "tsx scripts/design-shots.mjs",
+    "pretest:shots": "tsx scripts/build-fixture-catalog.ts",
+    "test:shots": "playwright test -c e2e/playwright.shots.config.ts"
   },
   "devDependencies": {
+    "@playwright/test": "^1.65.1",
     "@typescript-eslint/eslint-plugin": "^8.18.0",
     "@typescript-eslint/parser": "^8.18.0",
     "concurrently": "^9.1.0",
     "eslint": "^8.57.1",
     "prettier": "^3.4.2",
+    "tsx": "^4.19.2",
     "typescript": "^5.6.3",
     "vitest": "^2.1.8"
   }

@@ -1,7 +1,7 @@
 # Мастер-план проекта (дорожная карта задач)
 
 Источник: блок «Часть 2. Мастер-план», приложенный к промптам-задачам (14.11.2026).
-Глобальный контекст и реестр решений U1–U50 — в [`docs/project-context.md`](project-context.md).
+Глобальный контекст и реестр решений U1–U66 — в [`docs/project-context.md`](project-context.md).
 
 | ID | Название задачи | Зависит от | Tier | Краткая суть |
 |---|---|---|---|---|
@@ -21,28 +21,32 @@
 | 11 | Оркестратор загрузки и REST API | 7, 8, 9, 10 | TIER 2 | загрузка 6 источников, резерв, статусы, журнал ошибок, эндпоинты |
 | 11a | Supabase: выгрузка готовых записей | 7, 10, 11 | TIER 2 | сохранить имеющуюся фичу, привязать к новой модели данных |
 | **Этап 2 — вертикальные срезы UI** | | | | |
-| 12 | Каркас web: store, загрузка, Web Worker | 6, 11 | TIER 2 | загрузка каталога, пересчёт в воркере, состояния загрузки |
+| 12 | Каркас web: store, загрузка, Web Worker | 6, 11 | TIER 2 | загрузка каталога, пересчёт в воркере, состояния загрузки; первый кадр — карта (U61) |
 | 12a | Дизайн-токены и базовые компоненты по `@design-taste-frontend` | 12 | TIER 2 | единая визуальная основа до UI-задач 13–29 |
-| 13 | Шапка: режимы, счётчики, источники, баннеры | 12 | TIER 2 | переключатель, счётчики, панель источников, баннер резерва, обновление |
-| 14 | Поиск и «Параметры модели» | 12 | TIER 2 | поиск, границы HZ, чекбоксы штрафов, ползунок Q_data, сброс |
-| 15 | Панель фильтров и «Земля (эталон)» | 5, 12, 12a, 14 | TIER 2 | спектральные классы, диапазоны, калибровка, «Показывать кандидатов» |
-| 16 | Таблица Топ-50 | 12, 12a, 14 | TIER 2 | колонки, сортировка, теги, бейджи, «Приблизить» |
-| 17 | Механизм подсказок и словарь терминов | 12, 12a | TIER 2 | движок подсказок (11.1, 11.7), пересчёт единиц, словарь терминов |
+| 13 | Шапка: режимы, счётчики, источники, баннеры | 12 | TIER 2 | переключатель, счётчики, панель источников, баннер резерва, обновление; элементы лежат над холстом |
+| 14 | Поиск и «Параметры модели» | 12 | TIER 2 | поиск, границы HZ, чекбоксы штрафов, ползунок Q_data, сброс; совпадение на карте — перелёт камеры |
+| 15 | Панель фильтров и «Земля (эталон)» | 5, 12, 12a, 14 | TIER 2 | спектральные классы, диапазоны, калибровка, «Показывать кандидатов»; левая шторка поверх карты |
+| 16 | Таблица Топ-50 | 12, 12a, 14 | TIER 2 | колонки, сортировка, теги, бейджи, «Приблизить»; список панелью поверх карты |
+| 17 | Механизм подсказок и словарь терминов | 12, 12a | TIER 2 | движок подсказок (11.1, 11.7), пересчёт единиц, словарь терминов; подсказки над холстом |
 | 17a | Окно «Методика» | 17 | TIER 2 | формулы, уровни восстановления, источники, шкала, словарь |
-| 18 | Режим «Показать дополнительные данные» | 13, 16, 17 | TIER 2 | скрытие/показ служебных данных (11.2) |
-| 19 | Карточка планеты | 12, 12a, 16, 17, 18 | TIER 2 | цветовая маркировка, декомпозиция балла, бейджи, кнопки |
-| 20 | Экспорт CSV и «Ссылка» (URL-состояние) | 12, 16 | TIER 2 | CSV с режимом и датой, сериализация состояния |
-| 21 | 3D-карта Галактики | 12 | TIER 3 | координаты, звёздный фон, 50 меток, подсветка, hover/клик |
-| 22 | ✅ 3D-сцена: каркас, камера, масштаб, цель | 5, 12a, 19, 21 | TIER 3 | общий холст, машина состояний вида, модель масштаба, слои, управление, перелёт, [Планета] |
+| 18 | Режим «Показать дополнительные данные» | 13, 16, 17 | TIER 2 | скрытие/показ служебных данных (11.2); `map.unplaced` на домашнем экране |
+| 19 | Карточка планеты | 12, 12a, 16, 17, 18 | TIER 2 | цветовая маркировка, декомпозиция балла, бейджи, кнопки; правая шторка над картой |
+| 20 | Экспорт CSV и «Ссылка» (URL-состояние) | 12, 16 | TIER 2 | CSV с режимом и датой, сериализация состояния; раскладка `layout` в ссылке (U45) |
+| 21 | 3D-карта Галактики | 12 | TIER 3 | координаты, звёздный фон, 50 меток, подсветка, hover/клик; домашний экран (U61) |
+| 22 | ✅ 3D-сцена: каркас, камера, масштаб, цель | 5, 12a, 19, 21 | TIER 3 | общий холст, машина состояний вида, модель масштаба, слои, управление, перелёт, [Планета]; стартовое состояние — карта |
 | 23 | Отображение орбиты | 22 | TIER 3 | эллипс с фокусом в звезде, движение планеты по орбите, слой «Орбита», depth |
 | 24 | Отображение зоны обитаемости в 3D | 5, 19, 22 | TIER 2 | кольцо по `d_in`/`d_out`, слой «Зона обитаемости», полупрозрачность |
 | 25 | Рендер звезды и планеты | 22 | TIER 3 | цвет/размер звезды, типы миров, атмосфера |
 | 26 | Вращение планеты | 25 | TIER 2 | период, наклон, приливной захват, независимость от FPS |
 | 27 | Заглушка недостатка данных и бейджи 3D | 22, 25 | TIER 2 | серая сфера, пыль, ?, бейдж «Реконструкция по расчётной модели» |
-| 28 | Ленивый Exo.MAST и «Данные реконструкции» | 9, 11, 19, 22, 25 | TIER 2 | per-planet запрос, «Обновить данные планеты», панель реконструкции |
+| 27a | ✅ Космическая тема и дизайн-ревизия | 12a, 27 | TIER 2 | палитра и фон, самохостинг-шрифты, иконки, стеклянные панели над холстом, ревизия экранов по скриншотам (U63–U65). Файлы: `packages/shared/src/testing/dataset.ts`, `scripts/{build-fixture-catalog.ts,design-shots.mjs}`, `e2e/{playwright.config.ts,helpers/mockApi.ts}`, `styles/space.css`, `ui/{Icon.tsx,icons.ts,Glass.tsx}`, `docs/design-review.md`; тесты `dataset.test.ts`, `tokens.space.test.ts`, `fonts.test.ts`, `icons.test.tsx`. Кадры A1–A11 × 1440/1024/390 без открытых P1/P2 в области темы; «Методика» (17a) и камера сцены (22/25 → 27c) — вне области |
+| 27b | Система движения | 27a | TIER 2 | единые токены длительности и кривых, выезды и исчезновения, FLIP перестановки строк, reduced-motion |
+| 27c | Раскладка «карта — домашний экран» | 27a, 27b | TIER 3 | карта базовым слоем на весь вьюпорт, список, фильтры и карточка поверх, инвариант одного холста, inert и фокус (U61, U62) |
+| 27d | Автоматический аудит наложений | 27c | TIER 2 | Playwright-скрипт `audit:overlaps`, матрица состояний × ширин, отчёт и цикл исправлений |
+| 28 | Ленивый Exo.MAST и «Данные реконструкции» | 9, 11, 19, 22, 25, 27c | TIER 2 | per-planet запрос, «Обновить данные планеты», панель реконструкции |
 | **Этап 3 — интеграция и полировка** | | | | |
-| 29 | Жизненный цикл GPU и устойчивость выбора | 21, 22, 25, 26, 27 | TIER 3 | dispose, перемещение 50 меток, сохранение выбранной планеты |
-| 30 | Пустые состояния, ошибки, доступность | 13–20, 22, 27, 28 | TIER 2 | «ни одной планеты», сбои источников, клавиатура, Esc |
+| 29 | Жизненный цикл GPU и устойчивость выбора | 21, 22, 25, 26, 27, 27b, 27c | TIER 3 | dispose, перемещение 50 меток, сохранение выбранной планеты |
+| 30 | Пустые состояния, ошибки, доступность | 13–20, 22, 27, 27a–27d, 28 | TIER 2 | «ни одной планеты», сбои источников, клавиатура, Esc |
 | 31 | Сквозные тесты User Flow | все, кроме 11a | TIER 2 | сценарии разд. 10 и приёмка 11.3–11.6 |
 
 ---
@@ -75,6 +79,30 @@
 | 19 | ✅ Карточка планеты — `packages/shared/src/world/`: `thresholds.ts` (границы 1.65 / 6 R⊕, 230 / 330 / 700 K, U41), `classify.ts` (`classifyWorld`, `WorldClass`, `planetSurfaceTemperature`), `renderGaps.ts` (`renderGaps`, пробелы планеты и звезды п. 9.2); `indices/decomposition.ts` (`buildDecomposition`, `DecompRow`, инвариант «последний `cumulative` = индекс» с точностью 1e-9); `apps/web/src/slots.ts` (`registerSlot`, `<Slot>`, слоты `viewport`, `reconstruction`, `refreshPlanet`); `state/planetDetail.ts` (`createPlanetDetailLoader` с отбрасыванием устаревших ответов, `usePlanetDetail`); `workers/protocol.ts` + `rankingWorker.ts` (`getPlanetDetail` → `PlanetDetail` с `score`, `classicRank`, `hz`, `world`, `gaps`, `inTop`), `computeBackend.ts`, `state/store.ts` (`mapFocusRequest`, `requestMapFocus`, `actions.refreshPlanet`, `getPlanetDetail`); `components/planet/` (`PlanetPanel` U40, `PlanetHeader`, `ParamTable`, `OriginBadge`, `HzInfo`, `Decomposition`, `PlanetBadges`, `PlanetActions`); `App.tsx`, `extra/registry.ts` (`card.qdata`, `card.alternatives`, `card.decomp.sub`), `help.ru.ts` (`decomp.*`, `class.*`, `st_mass`, `unit.M_sun`, `unit.g_cm3`), `ru.ts`; 24 теста shared (классы, пробелы, разложение) и 19 тестов карточки (бейджи, зона обитаемости, свёрнутая декомпозиция, действия, слоты, альтернативные значения, устаревший ответ) |
 | 20 | ✅ Экспорт CSV и «Ссылка» — `packages/shared/src/share/` (`types.ts` — `SharedState` без search/showExtraData/compareClassic; `encode.ts` — URLSearchParams, значения по умолчанию опускаются кроме `v=1`; `decode.ts` — устойчивый разбор: неверный параметр отбрасывается отдельно и попадает в `ignored`, ссылка чужой версии игнорируется целиком), `export/` (`csv.ts` — BOM, `CSV_DELIMITER`, CRLF, RFC 4180, защита от формул, полная точность чисел, 24 колонки в порядке ТЗ; `fileName.ts` — `top50_<mode>_<YYYY-MM-DD>.csv` по локальной дате); `apps/web/src/lib/download.ts` (Blob + `<a download>` + `revokeObjectURL`), `lib/clipboard.ts` (Clipboard API → `execCommand` → `false`), `share/initialShared.ts` (разбор хэша один раз до первого compute, удаление хэша через `history.replaceState`), `share/useShareActions.ts` (реестр `exportCsv`/`copyLink`, `exportCsv = null` при пустых строках), `components/ui/Toast.tsx` (очередь вне React, `aria-live="polite"`, авто-закрытие 3 с), `components/share/LinkFallbackDialog.tsx` (выделенная ссылка); `state/store.ts` (`applyShared` — настройки/фильтры/сортировка без пересчёта), `main.tsx`, `App.tsx` (выбор планеты после каталога, `open=1`, уведомления), `i18n/ru.ts`, `styles/global.css` (`ui-toast*`, `share-fallback*`); 9 тестов shared (200 случайных состояний туда-обратно, умолчания, невалидные параметры, `v=2`, длина ≤ 400) и 10 тестов CSV (колонки, BOM, экранирование, формулы, null, точность, порядок, имя файла); 10 тестов web (один compute при восстановлении, планета не найдена, удаление хэша, обычный якорь не считается ссылкой, `open=1`, три пути копирования, CSV при пустых/непустых строках); ручная проверка Excel/LibreOffice/Sheets — `docs/open-questions.md` (U42) |
 | 21 | ✅ 3D-карта Галактики — `packages/shared/src/galaxy/frames.ts` (`icrsToGalactic`, `icrsToScene`; матрица ICRS → галактические, сцена Y вверх, 1 единица = 1 пк, U44), `galaxy/starColor.ts` (`teffToRGB`, `teffToUnitRGB`, серый для неизвестной температуры), `apps/web/src/three/map/buildGalaxy.ts` (группировка по `hostKey`, `Float32Array` позиций и цветов, `systemIndexByPlanet`, `unplaced`, `radiusP95`/`radiusMax`, кэш на снимок), `map/leaders.ts` (50 слотов по рангу + 51-й выбранной, смещение `k * 14 px`, подписи U43), `map/cameraPlan.ts` (обзор 2.2·radiusP95 под 35°, focus/flyTo, reduced motion), `map/GalaxyRenderer.ts` (WebGL, ShaderMaterial звёзд, состояния `aState`, кольцо выбора, кольца масштаба, Земля, CSS2D-слой, рендер по требованию, контекст и dispose), `map/LabelPool.ts` (51 постоянная CSS2D-кнопка, ручной `aria-label`, hover/focus-подсказки, 250 мс перемещения, 51-й слот), `map/GalaxyView.tsx` (слот `viewport`, заглушка рендерера, загрузка координат один раз на снимок, rows/selection/cameraReset/mapFocus/fly/search, fallback без WebGL), `map/MapOverlay.tsx` («Обзор», «Приблизить», предупреждение > 200 совпадений, `map.unplaced`), `map/controller.ts` (синглтон + публикация `onArrive`), `workers/protocol.ts` + `rankingWorker.ts` + `state/store.ts` (`getPositions` с `hostKey` и `st_teff`), `App.tsx` (`registerSlot('viewport', GalaxyView)`), токены `--map-bg`/`--map-star-unknown`/`--map-ring`, ExtraOnly `map.unplaced`, 59 тестов карты (frames, starColor, buildGalaxy, leaders, cameraPlan, labelPool, GalaxyView) |
+| 23 | ✅ Отображение орбиты — `packages/shared/src/scene/orbitMath.ts` (`solveKepler` — Ньютон с приведением M к [0, 2π), допуск 1e-12 или 30 итераций; `positionAU` — эллипс в плоскости XZ, перицентр на +X, [x, 0, −y]; `sampleEllipse` — 360/720 точек по эксцентрической аномалии, фокус в звезде; `orbitAvailability` — d конечна и > 0, e ∈ [0,1), `scale.nominal = false`), `apps/web/src/three/system/layers/`: `orbitLine.ts` (`Line2` + `LineMaterial`, `worldUnits: false`, ядро 1.5 px `--orbit-line`, ореол 3 px `--orbit-halo` 0.35, `depthTest: true` / `depthWrite: false`, замкнутый контур, общая геометрия двух слоёв), `orbitLayer.ts` (слой `orbit` с переключателем `showOrbit`; смена масштаба, d, e или планеты перестраивает только геометрию и материалы, объект сцены прежний; причина «Орбита не показана: …»), `keplerMotion.ts` (`registerMotionProvider`, `positionAU` с a = d, e, P из `resolved`; недоступная орбита оставляет статичное движение задачи 22), `SystemScene` подключает слой и движение, положение планеты переводится через `scale.mapAU`; токены `--orbit-line`/`--orbit-halo`; ручная проверка `LineMaterial` с `logarithmicDepthBuffer` в Chromium — артефактов нет, запасной `LineLoop` не понадобился (`docs/design-notes.md`, п. 10); 23 теста shared и 31 тест web |
+| 24 | ✅ Отображение зоны обитаемости в 3D — `packages/shared/src/scene/hzAvailability.ts` (`hzAvailability`: доступность по готовым `detail.hz`, список недостающих величин `st_teff` / `L_or_st_rad` / `d`, причина «Не хватает: …», границы не угадываются), `apps/web/src/three/system/layers/hzLayer.ts` (регистрация слоя `hz` с переключателем `showHz`, кольцо `RingGeometry(128)` в плоскости XZ по `unitsPerAU · d_in/d_out`, смена границ и режима масштаба перестраивает только геометрию, кэш-ключ `hzBounds:scaleMode:d_in:d_out:unitsPerAU`, причина «Зона обитаемости не показана: …»), `layers/hzRingMaterial.ts` (ShaderMaterial: `depthWrite: false`, `depthTest: true`, DoubleSide, `renderOrder = RENDER_ORDER.hz`, мягкие края 4 % ширины, контуры 1 px, непрозрачность 0.18), `SystemScene` подключает слой; токены `--hz-fill`/`--hz-edge` (оттенок отличается от изумрудного акцента ≥ 40° и от линии орбиты); 7 тестов shared и 14 тестов web (радиусы совпадают с карточкой, XZ, материал, смена границ/масштаба без пересоздания сцены, `far ≥ 4·extent`, переключатель, недоступность, dispose, HSL-токены) |
+| 25 | ✅ Рендер звезды и планеты — `packages/shared/src/world/`: `hash.ts` (FNV-1a 32 по UTF-8 без `TextEncoder`, mulberry32, соли), `palettes.ts` (единственный источник цветов планет вне `tokens.css`, 9 палитр), `starStyle.ts` (`buildStarStyle`), `worldStyle.ts` (`buildPlanetStyle`: классы U41, seed от `planetId`, `g = M/R²`, океан/шапки/облака/полосы/лава, `seaLevel` по константной кривой fbm с шагом 0.01, атмосфера), `atmosphereHints.ts` (`applyHints` U52); `apps/web/src/three/host/quality.ts` (профили 96/64/40, 6/5/3 октавы, пыль 2500/1500/600, `QualityMonitor` 120 кадров без повышения); `three/system/visuals/`: `types.ts` (`VisualCtx`, `StarVisualHandle`, `PlanetVisualHandle`, `SpinController`), `registry.ts` (+`registerStubFactory`, `registerSpinProvider`, `createSpinController`), `starVisual.ts` (фотосфера `SphereGeometry(1)` с масштабом и две Sprite-короны с `DataTexture` 64×64), `planetVisual.ts` (`root → axisGroup → surface/clouds/atmosphere`, один `ShaderMaterial` с `#define KIND_*`, рельеф по градиенту, `setSunState`, `attachSpin`), `atmosphereMesh.ts`, `cloudMesh.ts`, `glsl/` (3D simplex noise + fbm, `common` до `logdepthbuf_pars_*`, `logdepthbuf_vertex/fragment`, highp); `renderOrder` корона 1, атмосфера 2, облака 3; `SystemScene` подключает spin-provider, передаёт `setSunState` и красит `PointLight` в `sunColor`; `debug/WorldsGallery.tsx` доступна по `?debug=worlds`; тесты shared (hash, worldStyle, starStyle, atmosphereHints) и web (quality, registry, starVisual, planetVisual) |
+| 26 | ✅ Вращение планеты — `packages/shared/src/world/rotation.ts` (`computeRotation`: приливной захват при `P < 10` и у красных карликов при `P < 60`, условные периоды 1 / 16/24 / 10/24 сут, наклон по классу, азимут и `theta0`, `rotationAngle`/`spinAngle`), `apps/web/src/three/system/spin/spinController.ts` (наклон `qAz · qTilt`, вращение кватернионом вокруг локальной Y, дрейф облаков `0.03·elapsedSec`, `reset`/`dispose` без таймеров), `spin/spinProvider.ts` (регистрация провайдера, null для заглушки), `SimClock` (`spinHours`, `setPaused`, старт на паузе при reduced motion), `SystemScene` (simDays в `SpinCtx`, провайдер после построения), карточка: строка «Вращение» с `data-help-key="val.rotation"`, тексты locked/assumed/stub, подсказка `rotation`; тесты shared и web (режимы, периоды, наклоны, приливной захват ≤3.1°, независимость от FPS, дрейф облаков, dispose, часы, карточка) |
+| 27 | ✅ Заглушка недостатка данных и бейджи 3D — `packages/shared/src/world/missing.ts` (`missingParams`: планета → звезда → исключённые субиндексы, дедупликация по формулировке), `scene/scale.ts` (`makeScaleModel` всегда строит модель: `nominalStar` 1 R☉, `nominalPlanet` 1 R⊕), `three/system/stubs/stubFactories.ts` (серые сферы с `MeshStandardMaterial`, без короны/атмосферы, пыль и подписи), `stubs/dust.ts` (Points, атрибуты aSize/aAlpha/aPhase, слой 1.5–3.2·R, drawRange по качеству, reduced motion, logdepth), `stubs/stubLabels.ts` (знак ?, подпись «недостаточно данных для отрисовки», `stub.missing` со списком), `picking.ts` (onHover, throttle 50 мс, показ подсказки заглушки), `SceneBadges.tsx` (реконструкция, недостаток данных, Q_data через `scene.qdata`), `SceneControls` (1:1 блокируется при неизвестных размерах), `ViewportOverlay`, токены `--stub-*`, `ru.ts`; тесты shared и web (missing, scale, stubFactories, dust, stubLabels, SceneBadges, picking) |
+| 28 | ✅ Ленивый Exo.MAST и «Данные реконструкции» — `shared/exomast/`: `fieldMap.ts` (единицы из ответа, U26), `atmosphere.ts` (`extractAtmosphere`, пустые `EXOMAST_ATMOSPHERE_KEYS`, U52), `spectraMeta.ts` (`parseSpectrum`, заголовок ≤ 3 строк, `\u0000` → `invalid_json`), `world/lineage.ts` (`explainParam`: формулы Стефана — Больцмана, Кеплера, Чена — Киппинга, точность А/Б, входы, источник и альтернативы); сервер: `sources/exomast.ts` (конверт копии `properties`/`canonicalName`/`spectraFiles`, старый формат массива, список спектров с 404/422 → `[]`, сетевая ошибка → `null`), `sources/exomastSpectra.ts` (лимит 2 МБ, повтор без `/`, кэш 100), `routes/spectra.ts` (`spectrum_not_listed`, 502 с причиной); web: `exomast/api.ts`, `slice.ts` (кэш 30 планет, запись текущей сцены не вытесняется, отмена approach без ошибки), `bridge.ts` (ленивая загрузка при перелёте, `setHints` без перестройки сцены), `ReconstructionPanel`, `ParamSourceDialog`, `ExoMastSection`, `SpectraList`, `RefreshPlanetButton`, слоты `reconstruction`/`refreshPlanet`, `card.exomast.raw`/`card.exomast.values`; фикстуры `exomast-wasp-12b-info.json`, `exomast-wasp-12b-filelist.json`, `spectrum-sample.txt`; U26/U52 — `docs/open-questions.md`, дизайн — `docs/design-review.md` |
+
+## Запуск полного приложения (вне мастер-плана)
+
+Требование «код в репозитории рабочий, основной сценарий проверяется запуском»
+закрыто инфраструктурой запуска (решение U60):
+
+- `npm start` — сборка web и сервера, затем один процесс на `http://localhost:8787`:
+  `apps/server/src/static.ts` раздаёт `apps/web/dist` с SPA-fallback и immutable-кэшем
+  ассетов, `/api/*` остаётся у Fastify;
+- сборка сервера — `apps/server/scripts/build.mjs` (esbuild → `apps/server/dist/index.js`,
+  без tsx и TypeScript в рантайме); `@exo/shared` входит в бандл;
+- стартовый снимок без сети — `apps/server/src/pipeline/seed.ts`:
+  `BACKUP_DIR/merged/latest.json` → `EXO_SNAPSHOT` → `data/demo/catalog.json.gz`
+  (демо-снимок ~3 МБ, собирается `npm run data:demo`); при найденном снимке
+  автообновление выключено, `EXO_AUTO_REFRESH=1` включает;
+- `.env` / `.env.local` читаются сервером и `npm run refresh` (`apps/server/src/env.ts`);
+- 32 новых теста: статика и защита путей, чтение снимка (JSON/gzip/конверт),
+  стартовый снимок конвейера, разбор `.env`.
 
 ## Правки зависимостей задач (15.11.2026)
 
@@ -84,6 +112,56 @@
 | 29 | 21, 22, 25 | 21, 22, 25, 26, 27 | освобождение контроллера вращения и заглушек |
 | 30 | 13–20 | 13–20, 22, 27, 28 | Esc-порядок сцены, запасной вариант без WebGL, статус Exo.MAST |
 | 31 | все | все, кроме 11a | e2e не зависит от Supabase |
+
+---
+
+## Карта как домашний экран (15.11.2026)
+
+Решение U61 изменило стартовый вид: домашний экран — 3D-карта Галактики
+(`DEFAULT_LAYOUT = 'map'`), а список планет, карточка и панель фильтров открываются
+поверх неё. Состав задач не меняется, меняется поведение и набор проверок.
+
+| ID | Что меняется |
+|---|---|
+| 12 | Загрузка ведёт на карту: позиции из воркера (`getPositions`) готовы до первого кадра; на время загрузки — заглушка домашнего экрана, не пустой список |
+| 12a | `--map-bg` и токены карты становятся фоновыми токенами приложения; `contrast.test.ts` расширяется парами «текст над холстом» |
+| 13 | Шапка, баннеры, панель источников и журнал ошибок лежат над холстом |
+| 14 | Совпадение поиска — перелёт камеры карты (`flyRequest`), а не только подсветка строки |
+| 15 | Панель фильтров — левая шторка поверх карты; применение сразу меняет метки, `map.unplaced` и предупреждение «> 200 совпадений» |
+| 16 | Таблица — панель поверх карты; «Приблизить» закрывает список и уходит в сцену системы, клик по строке открывает карточку над картой |
+| 17 | Подсказки — отдельный слой выше WebGL и CSS2D-меток, не перехватывают hover карты |
+| 18 | `map.unplaced` и `scene.qdata` видны на домашнем экране |
+| 19 | Карточка — правая шторка над картой; закрытие возвращает фокус на метку или строку, холст не перестраивается |
+| 20 | В `SharedState` добавлен `layout`; `open=1` открывает шторку над картой; неизвестное значение `layout` отбрасывается (U45) |
+| 21 | Карта — домашний экран: стартовая камера «Обзор», пустые состояния «нет координат» и «нет WebGL» с переходом в список, 50 меток живут с первого кадра |
+| 22 | Начальное состояние машины видов — карта; «← Карта Галактики» = возврат домой; хост холста — весь вьюпорт |
+| 23–27 | Содержание не меняется; точка входа — карта → планета, возврат всегда на карту |
+| 28 | Панель «Данные реконструкции» — внутри правой шторки, слот `reconstruction` не переезжает |
+| 29 | Карта смонтирована постоянно: метки и GPU-ресурсы живут всю сессию; потеря WebGL-контекста на домашнем экране обязывает перейти в список |
+| 30 | «Ни одной планеты» и сбои источников показываются поверх карты; фокус начинается с карты, затем шторка; Esc-порядок расширен панелью списка (U58) |
+| 31 | Сквозной сценарий начинается с карты: список → фильтр → выбор → «Приблизить» → карточка → ссылка открывается на карте |
+
+Спорные места закрыты вместе с записью решения:
+
+1. декоративного CSS-фона нет совсем (U63), фон приложения — сплошной `--map-bg`;
+2. панель фильтров — левая шторка, симметрично правой шторке карточки (U62);
+3. при нулевом числе размещённых планет или без WebGL карта показывается с пустым
+   состоянием и кнопкой «Список планет» (U61), молчаливого ожидания нет.
+
+Порядок: 27d помечен TIER 2 при TIER 3 у 27c — tier задаёт важность, а не
+последовательность; 27d выполняется строго после 27c, иначе базы для аудита ещё нет.
+
+Изменения зависимостей:
+
+| ID | Было | Стало | Причина |
+|---|---|---|---|
+| 28 | 9, 11, 19, 22, 25 | 9, 11, 19, 22, 25, 27c | панель реконструкции живёт в правой шторке |
+| 29 | 21, 22, 25, 26, 27 | 21, 22, 25, 26, 27, 27b, 27c | метки и холст зависят от раскладки и системы движения |
+| 30 | 13–20, 22, 27, 27a–27d, 28 | 13–20, 22, 27, 27a–27d, 28 | inert, фокус, Esc и пустые состояния над картой |
+
+Параллельная работа над 27a–31 (ветки, worktree, фазы 0–7, гейты, общие файлы)
+описана в [`docs/parallel-work.md`](parallel-work.md); фаза 4 сливается строго
+`29` → `28-UI` → `27d`, гейт `npm run test:layout` появляется в `27d`.
 
 ---
 
