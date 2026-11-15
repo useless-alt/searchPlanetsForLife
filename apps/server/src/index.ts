@@ -11,8 +11,9 @@
  * Секреты и ключи здесь не нужны: хранилище проекта — JSON-файлы (п. 1.4).
  */
 
+import { existsSync } from 'node:fs';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import compress from '@fastify/compress';
 import Fastify, { type FastifyInstance } from 'fastify';
@@ -20,13 +21,18 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import { BACKUP_MIN_VERSIONS } from '@exo/shared';
 
 import { createBackupStore, type BackupStore } from './backup/store';
+import { loadEnvFiles } from './env';
 import { createErrorLog } from './pipeline/errorLog';
+import { loadSeedSnapshot } from './pipeline/seed';
 import { createPipelineState, type PipelineState } from './pipeline/state';
+import { createTestPipeline, isTestMode } from './testing/fakeSources';
 import { registerCatalogRoutes } from './routes/catalog';
 import { registerErrorsRoutes } from './routes/errors';
 import { registerExoMastRoutes } from './routes/exomast';
 import { registerRefreshRoutes } from './routes/refresh';
+import { registerSpectraRoutes } from './routes/spectra';
 import { registerStatusRoutes } from './routes/status';
+import { registerWebApp } from './static';
 
 export const DEFAULT_PORT = 8787;
 
@@ -221,6 +227,25 @@ export {
   type ExoMastResponse,
   type ExoMastUnavailableResponse,
 } from './routes/exomast';
+export {
+  registerSpectraRoutes,
+  type SpectrumResponse,
+  type SpectrumUnavailableResponse,
+} from './routes/spectra';
+export {
+  fetchSpectrumMeta,
+  SpectrumMetaCache,
+  spectrumMetaCache,
+  SPECTRUM_CACHE_LIMIT,
+  SPECTRUM_MAX_BYTES,
+  type SpectrumFetchOptions,
+} from './sources/exomastSpectra';
+export {
+  parseExoMastFileList,
+  readExoMastBackupPayload,
+  readExoMastCanonicalName,
+  type ExoMastBackupPayload,
+} from './sources/exomast';
 
 export interface HealthResponse {
   status: 'ok';
@@ -230,6 +255,29 @@ export interface HealthResponse {
 export interface BuildServerOptions {
   /** Готовое состояние конвейера; по умолчанию создаётся из окружения. */
   pipeline?: PipelineState;
+  /**
+   * Каталог собранного веб-приложения; `null` — не раздавать статику.
+   * По умолчанию — `apps/web/dist` (или `WEB_DIST`).
+   */
+  webRoot?: string | null;
+}
+
+/**
+ * Каталог сборки веб-приложения.
+ *
+ * `apps/web/dist` лежит рядом с `apps/server`, поэтому путь одинаков для
+ * исходников (`src/index.ts`) и для собранного сервера (`dist/index.js`).
+ * Переопределяется переменной `WEB_DIST`.
+ *
+ * @returns абсолютный путь либо `null`, если сборки нет.
+ */
+export function resolveWebRoot(env: NodeJS.ProcessEnv = process.env): string | null {
+  const explicit = env.WEB_DIST?.trim();
+  const root =
+    explicit && explicit.length > 0
+      ? path.resolve(process.cwd(), explicit)
+      : fileURLToPath(new URL('../../web/dist/', import.meta.url));
+  return existsSync(path.join(root, 'index.html')) ? root : null;
 }
 
 /**
@@ -260,28 +308,114 @@ export function buildServer(options: BuildServerOptions = {}): FastifyInstance {
     registerRefreshRoutes(instance, pipeline);
     registerErrorsRoutes(instance, pipeline);
     registerExoMastRoutes(instance, pipeline);
+    registerSpectraRoutes(instance, pipeline);
   });
+
+  const webRoot = options.webRoot === undefined ? resolveWebRoot() : options.webRoot;
+  if (webRoot !== null) {
+    registerWebApp(app, { root: webRoot });
+  }
 
   return app;
 }
 
+/** Настройки запуска сервера. */
+export interface StartOptions {
+  /** Читать стартовый снимок с диска (по умолчанию — да). */
+  seed?: boolean;
+  /**
+   * Запускать обновление сразу после `listen`.
+   *
+   * По умолчанию — только если стартового снимка нет: при наличии данных
+   * сеть не нужна, а обновление запускается кнопкой, `npm run refresh`
+   * или `EXO_AUTO_REFRESH=1`.
+   */
+  autoRefresh?: boolean;
+}
+
+/**
+ * Файлы, из которых сервер пытается поднять каталог без сети, в порядке
+ * приоритета: явный `EXO_SNAPSHOT`, слитый снимок `npm run refresh`,
+ * демонстрационный снимок из репозитория.
+ */
+export function seedCandidates(env: NodeJS.ProcessEnv = process.env): string[] {
+  const { dir } = readBackupEnv(env);
+  const explicit = env.EXO_SNAPSHOT?.trim();
+  const demo = fileURLToPath(new URL('../../../data/demo/catalog.json.gz', import.meta.url));
+  const candidates: Array<string | null> = [
+    explicit && explicit.length > 0 ? path.resolve(process.cwd(), explicit) : null,
+    path.join(dir, 'merged', 'latest.json'),
+    demo,
+  ];
+  return candidates.filter((candidate): candidate is string => candidate !== null);
+}
+
+/** Нужно ли автоматическое обновление после старта (`EXO_AUTO_REFRESH`). */
+function readAutoRefresh(hasSeed: boolean, env: NodeJS.ProcessEnv = process.env): boolean {
+  const raw = env.EXO_AUTO_REFRESH?.trim().toLowerCase();
+  if (raw === '1' || raw === 'true' || raw === 'yes') return true;
+  if (raw === '0' || raw === 'false' || raw === 'no') return false;
+  return !hasSeed;
+}
+
 /** Поднимает сервер на порту из PORT (по умолчанию 8787). */
-export async function start(port: number = readPort()): Promise<FastifyInstance> {
+export async function start(port?: number, options: StartOptions = {}): Promise<FastifyInstance> {
+  // `.env` / `.env.local` (п. 1.3): переменные процесса имеют приоритет.
+  // Читаем до readPort(): PORT из .env тоже должен работать.
+  loadEnvFiles();
+  const listenPort = port ?? readPort();
+
   // Журнал ошибок читается до старта сборки: панель диагностики сразу
   // показывает последние записи (U31).
   const errorLog = createErrorLog();
   await errorLog.load();
+
+  // --- 31 ---
+  // Тестовый режим: транспорт источников заменён подделками, стартовый
+  // снимок не читается, а резервные копии при необходимости кладутся до
+  // первой сборки. Внешняя сеть не используется.
+  if (isTestMode()) {
+    const test = await createTestPipeline({ env: process.env });
+    const testApp = buildServer({ pipeline: test.pipeline });
+    await testApp.listen({ port: listenPort, host: '0.0.0.0' });
+
+    console.log(
+      `[start] тестовый режим: поддельные источники, копии в ${path.relative(
+        process.cwd(),
+        test.backupDir,
+      )}`,
+    );
+    test.pipeline.startRefresh();
+
+    return testApp;
+  }
+  // --- /31 ---
+
+  const seed = options.seed === false ? null : await loadSeedSnapshot(seedCandidates(process.env));
+  if (seed !== null) {
+    console.log(
+      `[start] стартовый снимок: ${path.relative(process.cwd(), seed.filePath)} ` +
+        `(планет ${seed.snapshot.planetCount}, собран ${seed.snapshot.builtAt})`,
+    );
+  }
+
   const pipeline = createPipelineState({
     backup: createBackupStoreFromEnv(),
     errorLog,
+    initialSnapshot: seed?.snapshot,
   });
 
   const app = buildServer({ pipeline });
-  await app.listen({ port, host: '0.0.0.0' });
+  await app.listen({ port: listenPort, host: '0.0.0.0' });
 
   // Сборка стартует асинхронно после listen: первые запросы не ждут
   // загрузку источников (п. 10.10).
-  pipeline.startRefresh();
+  if (options.autoRefresh ?? readAutoRefresh(seed !== null)) {
+    pipeline.startRefresh();
+  } else {
+    console.log('[start] автообновление выключено: данные уже есть (EXO_AUTO_REFRESH=1 включит)');
+  }
+
   return app;
 }
 

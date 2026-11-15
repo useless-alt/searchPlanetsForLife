@@ -6,7 +6,7 @@
  * снят вручную 14.11.2026 (единственный сетевой вызов вне тестов).
  */
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { MJUP_IN_MEARTH, RJUP_IN_REARTH, type BackupMeta, type SourceId } from '@exo/shared';
 
@@ -18,12 +18,16 @@ import {
   extractExoMastParams,
   fetchExoMastProps,
   isAbortError,
+  parseExoMastFileList,
+  readExoMastBackupPayload,
+  readExoMastCanonicalName,
   selectExoMastCatalog,
 } from './exomast';
 
 import type { FetchLike, TapResponse } from './tap';
 
 import fixture from './fixtures/exomast-wasp-12b.json';
+import fileListFixture from './fixtures/exomast-wasp-12b-filelist.json';
 
 const FIXTURE = fixture as unknown as Array<Record<string, unknown>>;
 
@@ -151,11 +155,13 @@ describe('Exo.MAST: каноническое имя', () => {
 
     const props = await fetchExoMastProps('wasp-12-b', 'wasp-12b', { fetchImpl });
 
-    expect(urls).toHaveLength(3);
+    expect(urls).toHaveLength(4);
     expect(urls[0]).toContain('wasp-12b');
     expect(urls[1]).toContain('identifiers/?name=wasp-12b');
     expect(urls[2]).toContain('WASP-12%20b');
+    expect(urls[3]).toContain('/spectra/WASP-12%20b/filelist');
     expect(props.catalog).toBe('nexsci');
+    expect(props.canonicalName).toBe('WASP-12 b');
   });
 
   it('пустой ответ тоже приводит к запросу identifiers', async () => {
@@ -171,7 +177,7 @@ describe('Exo.MAST: каноническое имя', () => {
 
     const props = await fetchExoMastProps('unknown-planet', 'unknown-planet', { fetchImpl });
 
-    expect(urls).toHaveLength(3);
+    expect(urls).toHaveLength(4);
     expect(urls[1]).toContain('identifiers/?name=unknown-planet');
     expect(urls[2]).toContain('WASP-12%20b');
     expect(props.catalog).toBe('nexsci');
@@ -190,7 +196,9 @@ describe('Exo.MAST: ленивый кэш', () => {
       fetchExoMastProps('wasp-12-b-double', 'WASP-12 b', { fetchImpl }),
     ]);
 
-    expect(urls).toHaveLength(1);
+    // Один запрос свойств и один список спектров на оба вызова.
+    expect(urls.filter((url) => url.includes('/properties/'))).toHaveLength(1);
+    expect(urls.filter((url) => url.includes('/filelist'))).toHaveLength(1);
     expect(first.raw).toEqual(second.raw);
   });
 
@@ -208,6 +216,10 @@ describe('Exo.MAST: ленивый кэш', () => {
     expect(writes[0]?.opts.key).toBe('wasp-12-b');
     expect(writes[0]?.opts.recordCount).toBe(1);
     expect(writes[0]?.opts.endpoint).toContain('/properties/');
+    expect(writes[0]?.payload).toMatchObject({
+      canonicalName: 'WASP-12 b',
+      spectraFiles: [],
+    });
   });
 
   it('сетевая ошибка с копией в кэше даёт fromBackup = true', async () => {
@@ -324,5 +336,133 @@ describe('Exo.MAST: извлечение параметров', () => {
 
     expect(extracted.sy_dist).toBeUndefined();
     expect(extracted.st_teff).toBeCloseTo(6300, 6);
+  });
+});
+
+describe('Exo.MAST: список спектров', () => {
+  it('массив строк и объект с массивом читаются, прочие типы отбрасываются', () => {
+    expect(parseExoMastFileList(JSON.stringify(['a.txt', 'b.dat']))).toEqual(['a.txt', 'b.dat']);
+    expect(parseExoMastFileList(JSON.stringify(fileListFixture))).toEqual(
+      fileListFixture.filenames,
+    );
+    expect(parseExoMastFileList(JSON.stringify({ files: ['a.txt'], note: 'x' }))).toEqual([
+      'a.txt',
+    ]);
+    expect(parseExoMastFileList('{"message":"нет"}')).toEqual([]);
+    expect(parseExoMastFileList('не json')).toEqual([]);
+  });
+
+  it('оставляются только имена .txt и .dat', () => {
+    expect(parseExoMastFileList(JSON.stringify(['a.txt', 'b.pdf', 'c.dat', 'd.TXT']))).toEqual([
+      'a.txt',
+      'c.dat',
+      'd.TXT',
+    ]);
+  });
+
+  it('404 и 422 дают пустой список, свойства остаются успешными', async () => {
+    for (const status of [404, 422]) {
+      const { fetchImpl } = createRestFetch((url) =>
+        url.includes('/filelist')
+          ? { status, body: '' }
+          : { status: 200, body: JSON.stringify([NEXSCI]) },
+      );
+
+      const props = await fetchExoMastProps(`wasp-12-b-spectra-${String(status)}`, 'WASP-12 b', {
+        fetchImpl,
+      });
+
+      expect(props.spectraFiles).toEqual([]);
+      expect(props.catalog).toBe('nexsci');
+    }
+  });
+
+  it('сетевая ошибка списка даёт null, а свойства не теряются', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const { fetchImpl } = createRestFetch((url) => {
+      if (url.includes('/filelist')) throw new Error('Сеть недоступна');
+      return { status: 200, body: JSON.stringify([NEXSCI]) };
+    });
+
+    const props = await fetchExoMastProps('wasp-12-b-spectra-error', 'WASP-12 b', { fetchImpl });
+
+    expect(props.spectraFiles).toBeNull();
+    expect(props.extracted.st_teff).toBeCloseTo(6265, 6);
+    expect(warn).toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  it('список из фикстуры сохраняется в конверте резервной копии', async () => {
+    const { fetchImpl } = createRestFetch((url) =>
+      url.includes('/filelist')
+        ? { status: 200, body: JSON.stringify(fileListFixture) }
+        : { status: 200, body: JSON.stringify([NEXSCI]) },
+    );
+    const { backup, writes } = createFakeBackup(null);
+
+    const props = await fetchExoMastProps('wasp-12-b-filelist', 'WASP-12 b', {
+      fetchImpl,
+      backup,
+    });
+
+    expect(props.spectraFiles).toEqual(fileListFixture.filenames);
+    expect(writes[0]?.payload).toMatchObject({ spectraFiles: fileListFixture.filenames });
+  });
+});
+
+describe('Exo.MAST: копии и каноническое имя', () => {
+  it('старый формат копии (массив) читается с пустыми новыми полями', async () => {
+    const { fetchImpl } = createRestFetch(() => {
+      throw new Error('Сеть недоступна');
+    });
+    const { backup } = createFakeBackup([NEXSCI]);
+
+    const props = await fetchExoMastProps('wasp-12-b-legacy', 'WASP-12 b', { fetchImpl, backup });
+
+    expect(props.fromBackup).toBe(true);
+    expect(props.canonicalName).toBe('WASP-12 b');
+    expect(props.spectraFiles).toBeNull();
+    expect(props.atmosphere).toEqual({ molecules: [], keys: [] });
+  });
+
+  it('конверт копии восстанавливает каноническое имя и список спектров', async () => {
+    const { fetchImpl } = createRestFetch(() => {
+      throw new Error('Сеть недоступна');
+    });
+    const { backup } = createFakeBackup({
+      properties: [NEXSCI],
+      canonicalName: 'WASP-12 b',
+      spectraFiles: ['WASP-12b_transmission_Kreidberg2015.txt'],
+    });
+
+    const props = await fetchExoMastProps('wasp-12-b-envelope', 'WASP-12 b', {
+      fetchImpl,
+      backup,
+    });
+
+    expect(props.canonicalName).toBe('WASP-12 b');
+    expect(props.spectraFiles).toEqual(['WASP-12b_transmission_Kreidberg2015.txt']);
+  });
+
+  it('readExoMastCanonicalName читает canonical_name и planet_name', () => {
+    expect(readExoMastCanonicalName({ canonical_name: 'WASP-12 b' })).toBe('WASP-12 b');
+    expect(readExoMastCanonicalName({ planet_name: '  WASP-12 b ' })).toBe('WASP-12 b');
+    expect(readExoMastCanonicalName({})).toBeNull();
+  });
+
+  it('readExoMastBackupPayload понимает оба формата', () => {
+    expect(readExoMastBackupPayload([NEXSCI])).toEqual({
+      properties: [NEXSCI],
+      canonicalName: null,
+      spectraFiles: null,
+    });
+    expect(
+      readExoMastBackupPayload({
+        properties: [NEXSCI],
+        canonicalName: 'WASP-12 b',
+        spectraFiles: ['a.txt'],
+      }),
+    ).toEqual({ properties: [NEXSCI], canonicalName: 'WASP-12 b', spectraFiles: ['a.txt'] });
+    expect(readExoMastBackupPayload({ properties: [] })).toBeNull();
   });
 });

@@ -12,6 +12,7 @@
 import type {
   CatalogResponse,
   ErrorLogEntry,
+  ExoMastProps,
   PlanetRecord,
   SourceId,
   SourceStatus,
@@ -30,6 +31,11 @@ export interface PipelineStateOptions extends StagesDeps {
   backup: BackupStore;
   /** Журнал ошибок. */
   errorLog: ErrorLog;
+  /**
+   * Стартовый снимок с диска (см. `pipeline/seed.ts`). Если он есть, каталог
+   * доступен сразу после `listen`, а сеть не нужна до первого обновления.
+   */
+  initialSnapshot?: Snapshot;
   /** Текущее время (в тестах — фиксированное). */
   now?: () => Date;
 }
@@ -66,6 +72,13 @@ export interface PipelineState {
   getFetchImpl(): FetchLike | undefined;
   /** Таймаут запроса из настроек [мс]. */
   getTimeoutMs(): number | undefined;
+  /**
+   * Последние свойства Exo.MAST планеты (задача 28): нужны маршруту
+   * спектров, чтобы принимать только имена из полученного списка.
+   */
+  getExoMastProps(planetId: string): ExoMastProps | null;
+  /** Запоминает свойства Exo.MAST после успешного ленивого запроса. */
+  setExoMastProps(props: ExoMastProps): void;
 }
 
 /**
@@ -79,11 +92,21 @@ export function createPipelineState(options: PipelineStateOptions): PipelineStat
   const cache = createSnapshotCache();
   const now = options.now ?? (() => new Date());
 
-  let statuses: SourceStatus[] = createInitialStatuses();
-  let phase: StatusResponse['phase'] = 'idle';
+  // Стартовый снимок с диска: страница работает без ожидания сети (п. 8.1).
+  const initial = options.initialSnapshot ?? null;
+  if (initial !== null) cache.set(initial);
+
+  let statuses: SourceStatus[] =
+    initial !== null && initial.sources.length > 0
+      ? initial.sources.map((status) => ({ ...status }))
+      : createInitialStatuses();
+  let phase: StatusResponse['phase'] = initial !== null ? 'ready' : 'idle';
   let startedAt: string | null = null;
   let finishedAt: string | null = null;
   let inFlight: Promise<void> | null = null;
+
+  /** Последние свойства Exo.MAST по планетам (ленивый источник, U6). */
+  const exomastProps = new Map<string, ExoMastProps>();
 
   const deps: StagesDeps = {
     ...options,
@@ -201,5 +224,9 @@ export function createPipelineState(options: PipelineStateOptions): PipelineStat
     getErrorLog: () => options.errorLog,
     getFetchImpl: () => options.fetchImpl,
     getTimeoutMs: () => options.timeoutMs,
+    getExoMastProps: (planetId: string) => exomastProps.get(planetId) ?? null,
+    setExoMastProps: (props: ExoMastProps) => {
+      exomastProps.set(props.planetId, props);
+    },
   };
 }

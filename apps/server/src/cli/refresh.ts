@@ -25,6 +25,7 @@ import { BACKUP_SCHEMA_VERSION } from '@exo/shared';
 
 import { computeChecksum } from '../backup/checksum';
 import { createBackupStore } from '../backup/store';
+import { loadEnvFiles } from '../env';
 import { createErrorLog } from '../pipeline/errorLog';
 import { buildSnapshot, toCatalogResponse } from '../pipeline/snapshot';
 import { runStages } from '../pipeline/stages';
@@ -103,6 +104,8 @@ async function writeAtomic(filePath: string, data: string): Promise<void> {
 
 /** Главный сценарий. */
 async function main(): Promise<void> {
+  // `.env` / `.env.local`: BACKUP_DIR, REFRESH_* и таймауты (п. 1.3).
+  loadEnvFiles();
   const dir = backupDir();
   const mergedDir = path.join(dir, 'merged');
   const mergedLatest = path.join(mergedDir, 'latest.json');

@@ -166,6 +166,8 @@ function createFakePipeline(overrides: Partial<PipelineState> = {}): PipelineSta
     getErrorLog: () => errorLog,
     getFetchImpl: () => undefined,
     getTimeoutMs: () => undefined,
+    getExoMastProps: () => null,
+    setExoMastProps: () => undefined,
   };
   return { ...base, ...overrides };
 }

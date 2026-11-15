@@ -20,13 +20,16 @@
  */
 
 import type { ExoMastProps, RawParamKey, SourceId } from '@exo/shared';
-import { MJUP_IN_MEARTH, RJUP_IN_REARTH } from '@exo/shared';
+import { EXOMAST_FIELD_MAP, extractAtmosphere } from '@exo/shared';
 
 import type { BackupStore } from '../backup/store';
 
 import { SourceFetchError } from './errors';
 import { toNum } from './numbers';
 import type { FetchLike } from './tap';
+
+export { EXOMAST_FIELD_MAP } from '@exo/shared';
+export type { ExoMastFieldSpec } from '@exo/shared';
 
 /** Идентификатор источника. */
 export const EXOMAST_SOURCE: SourceId = 'exomast';
@@ -36,119 +39,6 @@ export const EXOMAST_BASE_URL = 'https://exo.mast.stsci.edu/api/v0.1/';
 
 /** Каталоги Exo.MAST в порядке предпочтения. */
 export const EXOMAST_CATALOG_ORDER: readonly string[] = ['nexsci', 'exoplanets.org'];
-
-/** Описание одного извлекаемого поля Exo.MAST. */
-export interface ExoMastFieldSpec {
-  /** Ключ значения в ответе Exo.MAST. */
-  key: string;
-  /** Ключ единицы измерения в ответе (`<key>_unit`). */
-  unitKey: string;
-  /** Ожидаемая единица измерения (как она записана в ответе). */
-  unit: string;
-  /** Множитель перевода в единицы проекта (п. 1.4). */
-  multiplier: number;
-  /** Источник единицы: поле `<key>_unit` того же ответа. */
-  unitSource: string;
-}
-
-/**
- * Таблица соответствия «логическое поле → ключ + единица + множитель».
- *
- * Источник данных — реальный ответ Exo.MAST
- * (`GET exoplanets/wasp-12b/properties/`, снят 14.11.2026,
- * фикстура `fixtures/exomast-wasp-12b.json`). Единица каждого значения
- * берётся из одноимённого поля `<ключ>_unit` того же ответа; если поля
- * единицы нет или его значение не совпадает с ожидаемым, значение
- * **не извлекается** (жёсткое правило 4).
- *
- * Перечень (ключ → единица → источник единицы → множитель):
- * - `Teff` → `K` → `Teff_unit` → 1 (`st_teff`, К);
- * - `Rs` → `R_sun` → `Rs_unit` → 1 (`st_rad`, R☉);
- * - `Ms` → `M_sun` → `Ms_unit` → 1 (`st_mass`, M☉);
- * - `distance` → `pc` → `distance_unit` → 1 (`sy_dist`, пк);
- * - `Rp` → `R_Jupiter` → `Rp_unit` → 11.209 (`pl_rade`, R⊕);
- * - `Mp` → `M_Jupiter` → `Mp_unit` → 317.83 (`pl_bmasse`, M⊕);
- * - `Tp` → `K` → `Tp_unit` → 1 (`pl_eqt`, К);
- * - `orbital_period` → `d` → `orbital_period_unit` → 1 (`pl_orbper`, сутки);
- * - `orbital_distance` → `AU` → `orbital_distance_unit` → 1 (`pl_orbsmax`, а.е.);
- * - `eccentricity` → безразмерная → `eccentricity_unit` (пусто или null) → 1
- *   (`pl_orbeccen`).
- *
- * Оговорка U26: единицы архива не сверены с его документацией — они
- * прочитаны из ответа. Замена на сверенные значения делается здесь.
- */
-export const EXOMAST_FIELD_MAP: Readonly<Record<string, ExoMastFieldSpec>> = {
-  st_teff: {
-    key: 'Teff',
-    unitKey: 'Teff_unit',
-    unit: 'K',
-    multiplier: 1,
-    unitSource: 'Teff_unit',
-  },
-  st_rad: {
-    key: 'Rs',
-    unitKey: 'Rs_unit',
-    unit: 'R_sun',
-    multiplier: 1,
-    unitSource: 'Rs_unit',
-  },
-  st_mass: {
-    key: 'Ms',
-    unitKey: 'Ms_unit',
-    unit: 'M_sun',
-    multiplier: 1,
-    unitSource: 'Ms_unit',
-  },
-  sy_dist: {
-    key: 'distance',
-    unitKey: 'distance_unit',
-    unit: 'pc',
-    multiplier: 1,
-    unitSource: 'distance_unit',
-  },
-  pl_rade: {
-    key: 'Rp',
-    unitKey: 'Rp_unit',
-    unit: 'R_Jupiter',
-    multiplier: RJUP_IN_REARTH,
-    unitSource: 'Rp_unit',
-  },
-  pl_bmasse: {
-    key: 'Mp',
-    unitKey: 'Mp_unit',
-    unit: 'M_Jupiter',
-    multiplier: MJUP_IN_MEARTH,
-    unitSource: 'Mp_unit',
-  },
-  pl_eqt: {
-    key: 'Tp',
-    unitKey: 'Tp_unit',
-    unit: 'K',
-    multiplier: 1,
-    unitSource: 'Tp_unit',
-  },
-  pl_orbper: {
-    key: 'orbital_period',
-    unitKey: 'orbital_period_unit',
-    unit: 'd',
-    multiplier: 1,
-    unitSource: 'orbital_period_unit',
-  },
-  pl_orbsmax: {
-    key: 'orbital_distance',
-    unitKey: 'orbital_distance_unit',
-    unit: 'AU',
-    multiplier: 1,
-    unitSource: 'orbital_distance_unit',
-  },
-  pl_orbeccen: {
-    key: 'eccentricity',
-    unitKey: 'eccentricity_unit',
-    unit: '',
-    multiplier: 1,
-    unitSource: 'eccentricity_unit',
-  },
-};
 
 /**
  * Ошибка отмены запроса (AbortSignal).
@@ -334,6 +224,110 @@ export function readExoMastCatalog(dict: Record<string, unknown>): string | null
 }
 
 /**
+ * Читает каноническое имя планеты из выбранного словаря (задача 28).
+ *
+ * Сначала `canonical_name`, затем `planet_name`: оба поля реального ответа
+ * содержат одно и то же имя, но набор полей у каталогов разный.
+ */
+export function readExoMastCanonicalName(dict: Record<string, unknown>): string | null {
+  for (const key of ['canonical_name', 'planet_name']) {
+    const value = dict[key];
+
+    if (typeof value === 'string' && value.trim() !== '') return value.trim();
+  }
+
+  return null;
+}
+
+/**
+ * Разбирает список спектральных файлов (задача 28; U59).
+ *
+ * Форма ответа не зафиксирована: массив строк либо объект, среди значений
+ * которого первый массив строк (`{"filenames": [...]}`). Всё остальное —
+ * пустой список. Оставляются только имена `.txt` и `.dat`.
+ */
+export function parseExoMastFileList(body: string): string[] {
+  let parsed: unknown;
+
+  try {
+    parsed = JSON.parse(body);
+  } catch {
+    return [];
+  }
+
+  const candidates: unknown[][] = [];
+
+  if (Array.isArray(parsed)) {
+    candidates.push(parsed);
+  } else if (parsed !== null && typeof parsed === 'object') {
+    for (const value of Object.values(parsed)) {
+      if (Array.isArray(value)) candidates.push(value);
+    }
+  }
+
+  let names: string[] | null = null;
+
+  for (const candidate of candidates) {
+    if (candidate.every((item) => typeof item === 'string')) {
+      names = candidate as string[];
+      break;
+    }
+  }
+
+  if (names === null) return [];
+
+  return names.filter((name) => /\.(txt|dat)$/i.test(name));
+}
+
+/** Конверт резервной копии Exo.MAST (задача 28). */
+export interface ExoMastBackupPayload {
+  /** Массив словарей ответа `properties`. */
+  properties: Record<string, unknown>[];
+  /** Каноническое имя; null — не сохранялось. */
+  canonicalName: string | null;
+  /** Список спектров; null — не получен. */
+  spectraFiles: string[] | null;
+}
+
+/**
+ * Читает конверт резервной копии.
+ *
+ * Старый формат — просто массив словарей (задача 9): он читается, а
+ * `canonicalName` и `spectraFiles` остаются null.
+ *
+ * @returns конверт либо null, если массив словарей не найден.
+ */
+export function readExoMastBackupPayload(payload: unknown): ExoMastBackupPayload | null {
+  const isDict = (item: unknown): item is Record<string, unknown> =>
+    item !== null && typeof item === 'object' && !Array.isArray(item);
+
+  if (Array.isArray(payload)) {
+    const properties = payload.filter(isDict);
+    if (properties.length === 0) return null;
+    return { properties, canonicalName: null, spectraFiles: null };
+  }
+
+  if (payload === null || typeof payload !== 'object') return null;
+
+  const envelope = payload as Partial<Record<keyof ExoMastBackupPayload, unknown>>;
+  if (!Array.isArray(envelope.properties)) return null;
+
+  const properties = envelope.properties.filter(isDict);
+  if (properties.length === 0) return null;
+
+  return {
+    properties,
+    canonicalName:
+      typeof envelope.canonicalName === 'string' && envelope.canonicalName.trim() !== ''
+        ? envelope.canonicalName.trim()
+        : null,
+    spectraFiles: Array.isArray(envelope.spectraFiles)
+      ? envelope.spectraFiles.filter((item): item is string => typeof item === 'string')
+      : null,
+  };
+}
+
+/**
  * Выбирает словарь ответа Exo.MAST.
  *
  * Приоритет: `nexsci` → `exoplanets.org` → первый элемент массива.
@@ -408,6 +402,16 @@ export function exoMastIdentifiersUrl(planetName: string): string {
   return `${EXOMAST_BASE_URL}exoplanets/identifiers/?name=${encodeURIComponent(planetName)}`;
 }
 
+/** Адрес списка спектральных файлов (задача 28). */
+export function exoMastFileListUrl(planetName: string): string {
+  return `${EXOMAST_BASE_URL}spectra/${encodeURIComponent(planetName)}/filelist`;
+}
+
+/** Адрес файла спектра (задача 28); завершающая `/` — по API архива. */
+export function exoMastFileUrl(planetName: string, file: string): string {
+  return `${EXOMAST_BASE_URL}spectra/${encodeURIComponent(planetName)}/file/${encodeURIComponent(file)}/`;
+}
+
 /** Промисы незавершённых запросов: параллельные вызовы делят один запрос. */
 const inFlight = new Map<string, Promise<ExoMastProps>>();
 
@@ -454,12 +458,9 @@ async function loadExoMastProps(
   const fetchImpl = options.fetchImpl ?? defaultFetchImpl();
   const fetchedAt = options.fetchedAt ?? new Date().toISOString();
 
-  let dicts: Record<string, unknown>[];
-  let endpoint: string;
+  let result: ExoMastDictsResult;
   try {
-    const result = await fetchExoMastDicts(planetName, options, fetchImpl);
-    dicts = result.dicts;
-    endpoint = result.endpoint;
+    result = await fetchExoMastDicts(planetName, options, fetchImpl);
   } catch (error: unknown) {
     // Отмена — не сбой источника: резервы не читаем, ошибку наружу не роняем.
     if (isAbortError(error)) throw error;
@@ -469,15 +470,31 @@ async function loadExoMastProps(
     throw error;
   }
 
-  const selected = selectExoMastCatalog(dicts);
+  const selected = selectExoMastCatalog(result.dicts);
   if (selected === null) {
     throw new SourceFetchError('empty', 'Exo.MAST: ответ без данных планеты');
   }
 
+  const canonicalName = result.canonicalName ?? readExoMastCanonicalName(selected);
+
+  // Список спектров не влияет на свойства: сетевая ошибка или 5xx дают null,
+  // а свойства остаются успешными (задача 28, п. 7.3).
+  const spectraFiles = await fetchExoMastSpectraFiles(
+    canonicalName ?? planetName,
+    options,
+    fetchImpl,
+  );
+
   if (options.backup) {
     try {
-      await options.backup.write(EXOMAST_SOURCE, dicts, {
-        endpoint,
+      const payload: ExoMastBackupPayload = {
+        properties: result.dicts,
+        canonicalName,
+        spectraFiles,
+      };
+
+      await options.backup.write(EXOMAST_SOURCE, payload, {
+        endpoint: result.endpoint,
         recordCount: 1,
         key: planetId,
       });
@@ -493,7 +510,50 @@ async function loadExoMastProps(
     catalog: readExoMastCatalog(selected),
     raw: selected,
     extracted: extractExoMastParams(selected),
+    canonicalName,
+    atmosphere: extractAtmosphere(selected),
+    spectraFiles,
   };
+}
+
+/** Результат запроса словарей свойств. */
+interface ExoMastDictsResult {
+  /** Массив словарей ответа. */
+  dicts: Record<string, unknown>[];
+  /** Адрес успешного запроса. */
+  endpoint: string;
+  /** Каноническое имя из `identifiers`; null — запасной вариант не нужен. */
+  canonicalName: string | null;
+}
+
+/**
+ * Запрашивает список спектральных файлов (задача 28).
+ *
+ * 404 и 422 — спектров нет (пустой список); сетевая ошибка, таймаут и 5xx —
+ * список не получен (null), но свойства планеты считаются успешными.
+ * Отмена запроса пробрасывается: это не сбой источника.
+ */
+async function fetchExoMastSpectraFiles(
+  planetName: string,
+  options: ExoMastOptions,
+  fetchImpl: FetchLike,
+): Promise<string[] | null> {
+  try {
+    const response = await httpGet(exoMastFileListUrl(planetName), options, fetchImpl);
+
+    if (response.status === 404 || response.status === 422) return [];
+    if (response.status < 200 || response.status >= 300) {
+      console.warn(`[exomast] список спектров: HTTP ${response.status}`);
+      return null;
+    }
+
+    return parseExoMastFileList(response.body);
+  } catch (error: unknown) {
+    if (isAbortError(error)) throw error;
+
+    console.warn('[exomast] список спектров не получен:', error);
+    return null;
+  }
 }
 
 /**
@@ -504,7 +564,7 @@ async function fetchExoMastDicts(
   planetName: string,
   options: ExoMastOptions,
   fetchImpl: FetchLike,
-): Promise<{ dicts: Record<string, unknown>[]; endpoint: string }> {
+): Promise<ExoMastDictsResult> {
   const url = exoMastPropertiesUrl(planetName);
   const response = await httpGet(url, options, fetchImpl);
 
@@ -522,7 +582,7 @@ async function fetchExoMastDicts(
   if (dicts.length === 0) {
     return fetchExoMastByCanonicalName(planetName, options, fetchImpl);
   }
-  return { dicts, endpoint: url };
+  return { dicts, endpoint: url, canonicalName: null };
 }
 
 /**
@@ -532,7 +592,7 @@ async function fetchExoMastByCanonicalName(
   planetName: string,
   options: ExoMastOptions,
   fetchImpl: FetchLike,
-): Promise<{ dicts: Record<string, unknown>[]; endpoint: string }> {
+): Promise<ExoMastDictsResult> {
   const identifiersUrl = exoMastIdentifiersUrl(planetName);
   const response = await httpGet(identifiersUrl, options, fetchImpl);
 
@@ -574,7 +634,7 @@ async function fetchExoMastByCanonicalName(
   if (dicts.length === 0) {
     throw new SourceFetchError('empty', 'Exo.MAST: ответ без данных планеты');
   }
-  return { dicts, endpoint: url };
+  return { dicts, endpoint: url, canonicalName: canonicalName.trim() };
 }
 
 /**
@@ -591,14 +651,10 @@ async function restoreExoMastProps(
   const stored = await backup.read(EXOMAST_SOURCE, planetId);
   if (stored === null) return null;
 
-  const payload = stored.payload;
-  if (!Array.isArray(payload)) return null;
+  const envelope = readExoMastBackupPayload(stored.payload);
+  if (envelope === null) return null;
 
-  const dicts = payload.filter(
-    (item): item is Record<string, unknown> =>
-      item !== null && typeof item === 'object' && !Array.isArray(item),
-  );
-  const selected = selectExoMastCatalog(dicts);
+  const selected = selectExoMastCatalog(envelope.properties);
   if (selected === null) return null;
 
   return {
@@ -608,5 +664,8 @@ async function restoreExoMastProps(
     catalog: readExoMastCatalog(selected),
     raw: selected,
     extracted: extractExoMastParams(selected),
+    canonicalName: envelope.canonicalName ?? readExoMastCanonicalName(selected),
+    atmosphere: extractAtmosphere(selected),
+    spectraFiles: envelope.spectraFiles,
   };
 }

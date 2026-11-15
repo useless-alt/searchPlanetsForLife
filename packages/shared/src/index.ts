@@ -11,11 +11,19 @@
  * «Земля (эталон)» и шкала калибровки (задача 15; 13.3, U35),
  * экспорт CSV и переносимое состояние ссылки (задача 20; 13.1, U42, U45),
  * система координат 3D-карты Галактики и цвет звезды (задача 21; п. 6, U44),
- * математическое ядро 3D-сцены системы (задача 22; п. 9.1, 9.4, U46–U50).
+ * математическое ядро 3D-сцены системы (задача 22; п. 9.1, 9.4, U46–U50),
+ * кеплеровская геометрия орбиты (задача 23; п. 11.3, U46, U49),
+ * доступность слоя зоны обитаемости (задача 24; п. 11.4),
+ * процедурный вид звезды и миров (задача 25; п. 9.1, 9.3, U41, U51, U52),
+ * ленивый Exo.MAST и объяснение происхождения параметров (задача 28; п. 4.3,
+ * 7.3, 9.5, 10.1.4, 11.1; U26, U52).
  */
 
 export * from './types/index';
 export * from './constants/index';
+export * from './exomast/atmosphere';
+export * from './exomast/fieldMap';
+export * from './exomast/spectraMeta';
 export * from './physics/provenance';
 export * from './physics/levelA';
 export * from './physics/levelB';
@@ -46,6 +54,11 @@ export * from './scene/constants';
 export * from './scene/starRadius';
 export * from './scene/scale';
 export * from './scene/cameraPlan';
+export * from './scene/hzAvailability';
+export * from './scene/orbitMath';
 export * from './scene/renderOrder';
+
+// --- 27a ---
+export * from './testing/dataset';
 
 export const SHARED_PACKAGE_READY = true;

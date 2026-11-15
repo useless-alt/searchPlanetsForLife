@@ -41,6 +41,10 @@ export interface ScaleModel {
   unitsPerAU: number;
   /** Расстояние до планеты условное: `d` отсутствует и принято равным 1 а.е. */
   nominal: boolean;
+  /** Радиус звезды неизвестен и принят равным 1 R☉. */
+  nominalStar: boolean;
+  /** Радиус планеты неизвестен и принят равным 1 R⊕. */
+  nominalPlanet: boolean;
   /** Переводит расстояние из астрономических единиц в единицы сцены. */
   mapAU(radiusAU: number): number;
 }
@@ -122,19 +126,21 @@ export function overviewPlanetDistance(starRadius: number, distanceAU: number): 
 /**
  * Строит модель масштаба сцены (п. 9.1, 9.4; U48, U50).
  *
- * Если радиус звезды нельзя определить ни из `st_rad`, ни по закону
- * Стефана — Больцмана, модель не строится и возвращается null.
+ * Если радиус звезды нельзя определить, используется 1 R☉ и
+ * `nominalStar = true`; отсутствующий радиус планеты заменяется 1 R⊕
+ * (`nominalPlanet = true`). Функция всегда возвращает модель: заглушки
+ * задачи 27 должны иметь размер, даже когда данные неполны.
  *
  * @param input Разрешённые поля планеты.
  * @param mode Режим масштаба.
- * @returns Модель или null, если нет радиуса звезды.
  */
-export function makeScaleModel(input: ScaleInput, mode: ScaleMode): ScaleModel | null {
-  const starSolar = starRadiusSolar(input);
-
-  if (starSolar === null) return null;
-
-  const planetRadiusReal = finitePositive(input.R) ?? OV_PLANET_RADIUS;
+export function makeScaleModel(input: ScaleInput, mode: ScaleMode): ScaleModel {
+  const measuredStar = starRadiusSolar(input);
+  const nominalStar = measuredStar === null;
+  const starSolar = measuredStar ?? 1;
+  const measuredPlanet = finitePositive(input.R);
+  const nominalPlanet = measuredPlanet === null;
+  const planetRadiusReal = measuredPlanet ?? OV_PLANET_RADIUS;
   const distanceAU = distanceAUOf(input);
   const nominal = isNominalDistance(input);
   const eccentricity = eccentricityOf(input);
@@ -143,14 +149,14 @@ export function makeScaleModel(input: ScaleInput, mode: ScaleMode): ScaleModel |
     const unitsPerAU = AU_IN_REARTH;
     const starRadius = starSolar * RSUN_IN_REARTH;
 
-    if (!Number.isFinite(starRadius) || starRadius <= 0) return null;
-
     return {
       mode,
       planetRadius: planetRadiusReal,
       starRadius,
       unitsPerAU,
       nominal,
+      nominalStar,
+      nominalPlanet,
       mapAU(radiusAU: number): number {
         return unitsPerAU * radiusAU;
       },
@@ -171,14 +177,14 @@ export function makeScaleModel(input: ScaleInput, mode: ScaleMode): ScaleModel |
     (starRadius + OV_PERI_CLEAR) / (distanceAU * (1 - eccentricity)),
   );
 
-  if (!Number.isFinite(unitsPerAU) || unitsPerAU <= 0) return null;
-
   return {
     mode,
     planetRadius: OV_PLANET_RADIUS,
     starRadius,
     unitsPerAU,
     nominal,
+    nominalStar,
+    nominalPlanet,
     mapAU(radiusAU: number): number {
       return unitsPerAU * radiusAU;
     },

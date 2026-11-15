@@ -164,17 +164,34 @@ describe('makeScaleModel — режим 1:1', () => {
 });
 
 describe('makeScaleModel — отсутствие данных', () => {
-  it('без радиуса звезды модель не строится', () => {
-    expect(makeScaleModel(scaleInput({ st_rad: null, L: null, st_teff: null }), 'overview')).toBe(
-      null,
+  it('без радиуса звезды используется 1 R☉ и nominalStar = true', () => {
+    const overview = makeScaleModel(
+      scaleInput({ st_rad: null, L: null, st_teff: null }),
+      'overview',
     );
-    expect(makeScaleModel(scaleInput({ st_rad: null, L: null, st_teff: null }), 'real')).toBeNull();
+    const real = makeScaleModel(scaleInput({ st_rad: null, L: null, st_teff: null }), 'real');
+
+    expect(overview.nominalStar).toBe(true);
+    expect(overview.starRadius).toBe(40);
+    expect(real.nominalStar).toBe(true);
+    expect(real.starRadius).toBe(RSUN_IN_REARTH);
   });
 
-  it('R = null заменяется радиусом заглушки 1.0', () => {
+  it('R = null заменяется радиусом заглушки 1.0 и nominalPlanet = true', () => {
     const model = makeScaleModel(scaleInput({ R: null, st_rad: 1 }), 'overview');
+    const real = makeScaleModel(scaleInput({ R: null, st_rad: 1 }), 'real');
 
-    expect(model?.planetRadius).toBe(1);
+    expect(model.planetRadius).toBe(1);
+    expect(model.nominalPlanet).toBe(true);
+    expect(real.planetRadius).toBe(1);
+    expect(real.nominalPlanet).toBe(true);
+  });
+
+  it('R = 2.5 сохраняется у заглушки планеты в режиме 1:1', () => {
+    const model = makeScaleModel(scaleInput({ R: 2.5, st_rad: 1 }), 'real');
+
+    expect(model.planetRadius).toBe(2.5);
+    expect(model.nominalPlanet).toBe(false);
   });
 });
 

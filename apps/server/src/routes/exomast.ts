@@ -54,6 +54,7 @@ export function registerExoMastRoutes(app: FastifyInstance, state: PipelineState
         });
 
         const status = props.fromBackup ? 'backup' : 'updated';
+        state.setExoMastProps(props);
         state.updateSourceStatus('exomast', {
           state: status,
           backupAt: props.fromBackup ? props.fetchedAt : null,

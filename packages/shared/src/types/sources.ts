@@ -1,3 +1,5 @@
+import type { ExoMastAtmosphere } from '../exomast/atmosphere';
+
 import type { MergeStats, PlanetRecord, RawParamKey } from './planet';
 import type { SourceId } from './provenance';
 
@@ -172,6 +174,18 @@ export interface ExoMastProps {
   raw: Record<string, unknown>;
   /** Извлечённые параметры в единицах п. 1.4. */
   extracted: Partial<Record<RawParamKey, number>>;
+  /**
+   * Каноническое имя планеты в Exo.MAST (задача 28; п. 7.3): из ответа
+   * `identifiers` либо из поля имени выбранного словаря; null — неизвестно.
+   */
+  canonicalName: string | null;
+  /** Молекулы атмосферы, найденные в `raw` (задача 28; U26, U52). */
+  atmosphere: ExoMastAtmosphere;
+  /**
+   * Имена спектральных файлов (`.txt`/`.dat`); null — список не получен
+   * (сеть или 5xx), пустой массив — спектров нет (задача 28).
+   */
+  spectraFiles: string[] | null;
 }
 
 /**
