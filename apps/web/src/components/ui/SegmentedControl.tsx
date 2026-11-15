@@ -24,8 +24,17 @@ export interface SegmentedControlOption<T extends string> {
    * нему текст справки из своего словаря.
    */
   helpKey?: string;
-  /** Вариант недоступен. */
+  /** Вариант недоступен (нативная блокировка). */
   disabled?: boolean;
+  /**
+   * Вариант недоступен, но остаётся фокусируемым для подсказки.
+   *
+   * Используется сценой системы: `aria-disabled="true"` вместо HTML
+   * `disabled`, чтобы работали `showHelpAt` и причина недоступности.
+   */
+  ariaDisabled?: boolean;
+  /** Причина недоступности для подсказки. */
+  disabledReason?: string;
 }
 
 /** Пропсы сегментированного переключателя. */
@@ -117,7 +126,9 @@ export function SegmentedControl<T extends string>({
 
       event.preventDefault();
 
-      if (target.value !== value) onChange(target.value);
+      // Недоступный вариант можно выбрать стрелкой только для подсказки:
+      // значение не меняется, но причина становится доступна с клавиатуры.
+      if (target.ariaDisabled !== true && target.value !== value) onChange(target.value);
 
       focusOption(target);
     },
@@ -135,16 +146,20 @@ export function SegmentedControl<T extends string>({
             type="button"
             role="radio"
             aria-checked={checked}
+            aria-disabled={option.ariaDisabled === true ? 'true' : undefined}
             tabIndex={checked ? 0 : -1}
             disabled={option.disabled === true}
             title={option.hint}
             data-help-key={option.helpKey}
+            data-help-disabled-reason={option.disabledReason}
             className="ui-segmented__option"
             ref={(element) => {
               if (element === null) buttons.current.delete(option.value);
               else buttons.current.set(option.value, element);
             }}
-            onClick={() => onChange(option.value)}
+            onClick={() => {
+              if (option.ariaDisabled !== true) onChange(option.value);
+            }}
           >
             {option.label}
           </button>

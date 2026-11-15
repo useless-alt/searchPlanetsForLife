@@ -1,4 +1,5 @@
 import type { RankingCounters } from '@exo/shared';
+import type { HTMLAttributes } from 'react';
 
 import { formatMessage, ru } from '../../i18n/ru';
 
@@ -10,25 +11,30 @@ import { formatMessage, ru } from '../../i18n/ru';
  * текущего расчёта. Числа форматируются с разделителем тысяч (ru-RU).
  *
  * Счётчики — служебные данные: по п. 11.2 (U12) они скрыты, пока
- * пользователь не включит «Показать дополнительные данные».
+ * пользователь не включит «Показать дополнительные данные» (задача 18).
  */
 
 /** Формат чисел с разделителем тысяч (ru-RU). */
 const NUMBER_FORMAT = new Intl.NumberFormat('ru-RU');
 
 /** Пропсы счётчиков. */
-export interface CountersProps {
+export interface CountersProps extends HTMLAttributes<HTMLParagraphElement> {
   /** Счётчики текущего расчёта; null — расчёта ещё не было. */
   counters: RankingCounters | null;
 }
 
 /** Счётчики выборки. */
-export function Counters({ counters }: CountersProps) {
+export function Counters({ counters, className, ...rest }: CountersProps) {
   const text = formatMessage(ru['header.counters'], {
     total: NUMBER_FORMAT.format(counters?.total ?? 0),
     computed: NUMBER_FORMAT.format(counters?.computed ?? 0),
     strict: NUMBER_FORMAT.format(counters?.strictMeasured ?? 0),
   });
+  const classes = ['header__counters', className].filter(Boolean).join(' ');
 
-  return <p className="header__counters">{text}</p>;
+  return (
+    <p {...rest} className={classes}>
+      {text}
+    </p>
+  );
 }

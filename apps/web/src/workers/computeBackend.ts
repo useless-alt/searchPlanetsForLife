@@ -3,6 +3,7 @@ import type { FilterState, ModelSettings, PlanetRecord, ResolvedPlanet } from '@
 import { createRankingEngine } from './rankingWorker';
 import type {
   ComputeResult,
+  PlanetDetail,
   PlanetPosition,
   SortSpec,
   WorkerRequest,
@@ -57,6 +58,8 @@ export interface ComputeBackend {
   getResolved(ids: readonly string[]): Promise<ResolvedPlanet[]>;
   /** Возвращает координаты всех планет (3D-карта, задача 21). */
   getPositions(): Promise<PlanetPosition[]>;
+  /** Возвращает полные данные планеты для карточки (задача 19). */
+  getPlanetDetail(id: string): Promise<PlanetDetail>;
   /** Освобождает транспорт; незавершённые запросы отклоняются. */
   dispose(): void;
 }
@@ -221,13 +224,15 @@ export function createComputeBackend(channel: BackendChannel): ComputeBackend {
 
       case 'ready':
       case 'resolved':
-      case 'positions': {
+      case 'positions':
+      case 'detail': {
         const entry = pending.get(message.requestId);
         if (entry === undefined) return;
 
         pending.delete(message.requestId);
 
         if (message.type === 'ready') entry.resolve(message.count);
+        else if (message.type === 'detail') entry.resolve(message.detail);
         else entry.resolve(message.items);
         return;
       }
@@ -281,6 +286,10 @@ export function createComputeBackend(channel: BackendChannel): ComputeBackend {
 
     getPositions() {
       return request((requestId) => ({ type: 'getPositions', requestId }));
+    },
+
+    getPlanetDetail(id) {
+      return request((requestId) => ({ type: 'getPlanetDetail', requestId, id }));
     },
 
     dispose() {

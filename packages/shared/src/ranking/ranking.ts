@@ -66,6 +66,13 @@ export interface RankingResult {
   counters: RankingCounters;
   /** Оценки текущего режима по идентификатору планеты; `null` — режим не применим. */
   scores: Map<string, ScoreBreakdown | null>;
+  /**
+   * Базовые ранги по упрощённому ESI для всего отфильтрованного набора.
+   *
+   * В отличие от `rows` карта содержит и планеты за пределами Топ-50:
+   * карточка планеты (задача 19) показывает ранг в упрощённом ESI и для них.
+   */
+  classicRanks: Map<string, number>;
 }
 
 /** Запись с оценкой режима. */
@@ -189,6 +196,7 @@ export function computeRanking(
       matching,
     },
     scores,
+    classicRanks,
   };
 }
 

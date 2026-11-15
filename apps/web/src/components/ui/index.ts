@@ -41,6 +41,9 @@ export type { SliderProps } from './Slider';
 export { Spinner } from './Spinner';
 export type { SpinnerProps, SpinnerSize } from './Spinner';
 
+export { TOAST_DURATION_MS, ToastHost, dismissToast, resetToasts, showToast } from './Toast';
+export type { ToastItem } from './Toast';
+
 export {
   Table,
   TableBody,

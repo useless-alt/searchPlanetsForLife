@@ -77,6 +77,11 @@ export const tokens = {
   'color-hz-fill': 'rgba(125, 148, 173, 0.18)',
   'color-hz-edge': '#7d94ad',
 
+  // карта Галактики (задача 21; п. 6, 10.8; U44)
+  'map-bg': '#0b1014',
+  'map-star-unknown': '#8b8b8b',
+  'map-ring': 'rgba(142, 160, 173, 0.35)',
+
   // типографика
   'font-display': "'Schibsted Grotesk', system-ui, 'Segoe UI', sans-serif",
   'font-text': "'Schibsted Grotesk', system-ui, 'Segoe UI', sans-serif",
@@ -144,6 +149,18 @@ export const tokens = {
   'z-tooltip': '60',
   'z-modal': '80',
   'z-toast': '90',
+
+  // подсказки (задача 17)
+  'tooltip-bg': 'var(--color-surface-inverse)',
+  'tooltip-color': 'var(--color-text-inverse)',
+  'tooltip-muted': '#b9c0c5',
+  'tooltip-border': 'var(--color-border-inverse)',
+  'tooltip-radius': 'var(--radius-md)',
+  'tooltip-padding': 'var(--space-3)',
+  'tooltip-max-width': '360px',
+  'tooltip-offset': '12px',
+  'tooltip-margin': '8px',
+  'tooltip-shadow': 'var(--shadow-3)',
 } as const;
 
 /** Имя пользовательского свойства CSS. */
@@ -171,6 +188,14 @@ export const three = {
   hzEdge: 0x7d94ad,
   /** Прозрачность заливки зоны обитаемости: не конфликтует с подсветкой лидеров. */
   hzFillOpacity: 0.18,
+  /** Фон 3D-карты Галактики. */
+  mapBackground: 0x0b1014,
+  /** Звезда с неизвестной температурой (п. 6.2). */
+  mapStarUnknown: 0x8b8b8b,
+  /** Кольца масштаба и опорные подписи карты. */
+  mapRing: 0x8ea0ad,
+  /** Прозрачность тонких колец масштаба. */
+  mapRingOpacity: 0.35,
 } as const;
 
 /** Прозрачность заливки зоны обитаемости (0..1). */

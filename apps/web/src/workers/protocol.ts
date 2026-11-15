@@ -2,13 +2,17 @@ import type {
   FilterState,
   ModelSettings,
   PlanetRecord,
+  Provenance,
   RankedRow,
   RankingCounters,
+  RenderGaps,
   ResolvedPlanet,
+  ScoreBreakdown,
   SortDirection,
   SortKey,
   SortState,
   SpectralClass,
+  WorldClass,
 } from '@exo/shared';
 
 /**
@@ -43,8 +47,23 @@ export function toSortSpec(sort: SortState): SortSpec {
   return { column: sort.key, dir: sort.direction };
 }
 
-/** Бейдж достоверности Q_data (U8): «Высокая», «Средняя», «Оценочная». */
-export type QBadge = 'high' | 'medium' | 'low';
+/**
+ * Уровень достоверности Q_data для бейджа таблицы (U8).
+ *
+ * `estimated` — нижняя ступень шкалы («Оценочная»); пороги берутся из
+ * `Q_BADGE_THRESHOLDS`.
+ */
+export type QLevel = 'high' | 'medium' | 'estimated';
+
+/** Происхождение параметров планеты, показываемых в таблице (п. 4.2, 11.1). */
+export interface RowProvenance {
+  /** Происхождение радиуса R. */
+  R: Provenance | null;
+  /** Происхождение массы M. */
+  M: Provenance | null;
+  /** Происхождение эксцентриситета e. */
+  e: Provenance | null;
+}
 
 /**
  * Строка таблицы Топ-50 с полями, нужными таблице и карточке (10.5, 13.4).
@@ -72,8 +91,16 @@ export interface RankedRowView extends RankedRow {
   dist_pc: number | null;
   /** Число источников, из которых собрана запись («N ист.», 13.4). */
   sourcesCount: number;
-  /** Бейдж достоверности Q_data (U8). */
-  qBadge: QBadge;
+  /** Коэффициент достоверности данных Q_data (п. 2.5). */
+  Q_data: number;
+  /** Уровень достоверности для бейджа (U8). */
+  qLevel: QLevel;
+  /** Происхождение R, M и e для префикса `~` (п. 4.2). */
+  provenance: RowProvenance;
+  /** Масса или радиус восстановлены на Уровне Б: тег «Низк.» (U37). */
+  lowReliability: boolean;
+  /** Данных недостаточно (k < 3): индекс 0.00 и значок (10.5). */
+  insufficient: boolean;
   /** Масса восстановлена по модели Чен — Киппинг (Уровень Б). */
   levelB_mass: boolean;
   /** Радиус восстановлен по модели Чен — Киппинг (Уровень Б). */
@@ -90,16 +117,73 @@ export interface ComputeResult {
   counters: RankingCounters;
 }
 
-/** Положение планеты для 3D-карты (задача 21). */
+/** Положение планеты для 3D-карты (задача 21; п. 6.1, 10.8; U44). */
 export interface PlanetPosition {
   /** Стабильный идентификатор планеты (U17). */
   id: string;
+  /**
+   * Канонический ключ родительской звезды (нормализация имени, п. 7.2).
+   * null — имени звезды нет; система тогда определяется по `id` планеты.
+   */
+  hostKey: string | null;
   /** Прямое восхождение [°]; null — неизвестно. */
   ra: number | null;
   /** Склонение [°]; null — неизвестно. */
   dec: number | null;
   /** Расстояние до системы [пк]; null — неизвестно. */
   dist_pc: number | null;
+  /** Эффективная температура звезды [К]; null — неизвестна. */
+  st_teff: number | null;
+}
+
+/** Границы зоны обитаемости и положение планеты в ней (11.4). */
+export interface PlanetHzView {
+  /** Внутренняя граница зоны [а.е.]. */
+  d_in: number;
+  /** Внешняя граница зоны [а.е.]. */
+  d_out: number;
+  /** Эффективная дистанция с поправкой на эксцентриситет [а.е.]. */
+  d_eff: number;
+  /** Положение в зоне обитаемости. */
+  HZD: number;
+  /** Климатический балл. */
+  F_HZ: number;
+}
+
+/**
+ * Полные данные планеты для карточки и 3D-сцены (задача 19; п. 10.7, 13.5).
+ *
+ * Деталь запрашивается воркером при каждой смене выбранной планеты, настроек
+ * модели или снимка каталога. `score` — разложение текущего режима; `null`,
+ * если режим к планете не применим (U20).
+ */
+export interface PlanetDetail {
+  /** Стабильный идентификатор планеты. */
+  id: string;
+  /** Отображаемое имя планеты. */
+  name: string;
+  /** Имя родительской звезды; null — неизвестно. */
+  hostname: string | null;
+  /** Буква планеты у звезды (b..z); null — не определена. */
+  letter: string | null;
+  /** Синонимы имени планеты. */
+  aliases: string[];
+  /** Число источников, из которых собрана запись. */
+  sourcesCount: number;
+  /** Разрешённые параметры после решателя пропусков. */
+  resolved: ResolvedPlanet;
+  /** Разложение балла текущего режима; null — режим не применим. */
+  score: ScoreBreakdown | null;
+  /** Ранг в упрощённом ESI; null — нет базы сравнения или планета вне Топ-50. */
+  classicRank: number | null;
+  /** Зона обитаемости для выбранных границ; null — границы не рассчитаны. */
+  hz: PlanetHzView | null;
+  /** Класс мира (U41). */
+  world: WorldClass;
+  /** Пробелы данных для отрисовки (п. 9.2). */
+  gaps: RenderGaps;
+  /** Планета входит в текущий Топ-50. */
+  inTop: boolean;
 }
 
 /** Запрос инициализации: каталог передаётся один раз за снимок. */
@@ -132,8 +216,17 @@ export interface GetPositionsRequest {
   requestId: number;
 }
 
+/** Запрос полных данных планеты для карточки (задача 19). */
+export interface GetPlanetDetailRequest {
+  type: 'getPlanetDetail';
+  requestId: number;
+  /** Идентификатор планеты. */
+  id: string;
+}
+
 /** Сообщение основного потока воркеру. */
-export type WorkerRequest = InitRequest | ComputeRequest | GetResolvedRequest | GetPositionsRequest;
+export type WorkerRequest =
+  InitRequest | ComputeRequest | GetResolvedRequest | GetPositionsRequest | GetPlanetDetailRequest;
 
 /** Ответ на инициализацию: решатель пропусков отработал один раз. */
 export interface ReadyResponse {
@@ -165,6 +258,13 @@ export interface PositionsResponse {
   items: PlanetPosition[];
 }
 
+/** Ответ с полными данными планеты. */
+export interface DetailResponse {
+  type: 'detail';
+  requestId: number;
+  detail: PlanetDetail;
+}
+
 /** Ответ с ошибкой обработки запроса. */
 export interface ErrorResponse {
   type: 'error';
@@ -174,4 +274,9 @@ export interface ErrorResponse {
 
 /** Сообщение воркера основному потоку. */
 export type WorkerResponse =
-  ReadyResponse | ResultResponse | ResolvedResponse | PositionsResponse | ErrorResponse;
+  | ReadyResponse
+  | ResultResponse
+  | ResolvedResponse
+  | PositionsResponse
+  | DetailResponse
+  | ErrorResponse;

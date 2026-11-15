@@ -1,11 +1,13 @@
 import { useCallback, useState } from 'react';
 import { useStore } from 'zustand';
 
+import { ExtraOnly } from '../../extra/ExtraOnly';
 import { ru } from '../../i18n/ru';
 import { appStore, type AppStore } from '../../state/store';
 import { Button, Modal, Spinner } from '../ui';
 import { Counters } from './Counters';
 import { ErrorLogView } from './ErrorLogView';
+import { ExtraToggle } from './ExtraToggle';
 import { ModeSwitch } from './ModeSwitch';
 import { SelectedPlanetBadge } from './SelectedPlanetBadge';
 import { SourceBanners } from './SourceBanners';
@@ -17,8 +19,12 @@ import { SourcesPanel } from './SourcesPanel';
  *
  * Состав слева направо: название приложения, счётчики (только при
  * `showExtraData`, п. 11.2 и U12), переключатель режимов, бейдж выбранной
- * планеты, «Обзор», «CSV», «Ссылка», «Методика», «Источники (N/N + MAST)» и
- * «Обновить данные».
+ * планеты, «Обзор», «CSV», «Ссылка», «Методика», «Источники (N/N + MAST)»,
+ * «Обновить данные» и переключатель «Показать дополнительные данные»
+ * (задача 18) — справа от обновления.
+ *
+ * Счётчики и технические подписи панели источников обёрнуты в `ExtraOnly`:
+ * другой способ скрывать служебные данные не используется.
  *
  * Действия «CSV», «Ссылка» и «Методика» подключаются задачами 17 и 20 через
  * реестр действий: пока действие не зарегистрировано, кнопка недоступна.
@@ -37,9 +43,10 @@ export interface HeaderProps {
 export function Header({ store = appStore }: HeaderProps = {}) {
   const phase = useStore(store, (state) => state.phase);
   const counters = useStore(store, (state) => state.counters);
-  const showExtraData = useStore(store, (state) => state.showExtraData);
   const mode = useStore(store, (state) => state.settings.mode);
   const sources = useStore(store, (state) => state.sources);
+  const snapshotId = useStore(store, (state) => state.snapshotId);
+  const builtAt = useStore(store, (state) => state.builtAt);
   const selectedPlanetId = useStore(store, (state) => state.selectedPlanetId);
   const catalogIndex = useStore(store, (state) => state.catalogIndex);
   const actions = useStore(store, (state) => state.actions);
@@ -76,7 +83,9 @@ export function Header({ store = appStore }: HeaderProps = {}) {
         <div className="header__inner">
           <h1 className="header__title">{ru['app.title']}</h1>
 
-          {showExtraData ? <Counters counters={counters} /> : null}
+          <ExtraOnly id="header.counters" store={store}>
+            <Counters counters={counters} />
+          </ExtraOnly>
 
           <ModeSwitch
             value={mode}
@@ -131,6 +140,8 @@ export function Header({ store = appStore }: HeaderProps = {}) {
               {ru['header.refresh']}
             </Button>
 
+            <ExtraToggle store={store} />
+
             {refreshing ? <Spinner label={ru['header.refreshing']} size="sm" /> : null}
           </div>
         </div>
@@ -142,6 +153,10 @@ export function Header({ store = appStore }: HeaderProps = {}) {
         open={sourcesOpen}
         sources={sources}
         refreshing={refreshing}
+        snapshotId={snapshotId}
+        builtAt={builtAt}
+        recordCount={Object.keys(catalogIndex).length}
+        store={store}
         onClose={() => setSourcesOpen(false)}
         onRetry={() => void refresh()}
         onOpenErrorLog={handleOpenErrorLog}

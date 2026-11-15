@@ -1,15 +1,24 @@
 import {
+  DEFAULT_SETTINGS,
   Q_BADGE_THRESHOLDS,
+  classifyWorld,
+  computeHz,
   computeRanking,
+  renderGaps,
+  scorePlanet,
+  searchKey,
   solveCatalog,
   spectralClass,
+  type ModelSettings,
   type PlanetRecord,
   type ResolvedPlanet,
+  type ScoreBreakdown,
 } from '@exo/shared';
 
 import {
   toSortState,
-  type QBadge,
+  type PlanetDetail,
+  type QLevel,
   type RankedRowView,
   type WorkerRequest,
   type WorkerResponse,
@@ -32,6 +41,10 @@ interface PlanetDisplay {
   name: string;
   /** Имя родительской звезды. */
   hostname: string;
+  /** Буква планеты у звезды; null — не определена. */
+  letter: string | null;
+  /** Синонимы имени планеты. */
+  aliases: string[];
   /** Число источников записи. */
   sourcesCount: number;
 }
@@ -44,17 +57,28 @@ export interface RankingEngine {
   readonly count: number;
 }
 
-/** Бейдж достоверности Q_data по порогам U8. */
-function qBadge(q: number): QBadge {
+/** Уровень достоверности Q_data по порогам U8. */
+function qLevel(q: number): QLevel {
   if (q >= Q_BADGE_THRESHOLDS.high) return 'high';
   if (q >= Q_BADGE_THRESHOLDS.medium) return 'medium';
 
-  return 'low';
+  return 'estimated';
 }
 
 /** Сообщение об ошибке в виде строки. */
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
+}
+
+/**
+ * Канонический ключ имени звезды для 3D-карты (задача 21; п. 7.2, U44).
+ *
+ * Используется та же нормализация, что у поиска: для латинских имён она
+ * совпадает с `normalizeName` слияния, но не теряет кириллицу. Пустой
+ * результат означает отсутствие имени — система определяется по id планеты.
+ */
+function normalizeName(value: string): string | null {
+  return searchKey(value) || null;
 }
 
 /**
@@ -69,6 +93,13 @@ export function createRankingEngine(): RankingEngine {
   let byId = new Map<string, ResolvedPlanet>();
   let display = new Map<string, PlanetDisplay>();
   let initialized = false;
+
+  /** Настройки последнего пересчёта: карточка считает по ним же. */
+  let lastSettings: ModelSettings = DEFAULT_SETTINGS;
+  /** Оценки последнего Топ-50 по идентификатору планеты. */
+  let lastScores = new Map<string, ScoreBreakdown>();
+  /** Базовые ранги упрощённого ESI из последнего пересчёта (весь набор). */
+  let lastClassicRanks = new Map<string, number>();
 
   /** Переводит строку ранжирования в строку таблицы. */
   function toRow(row: ReturnType<typeof computeRanking>['rows'][number]): RankedRowView {
@@ -90,7 +121,15 @@ export function createRankingEngine(): RankingEngine {
       spectralClass: spectralClass(planet.st_teff.value),
       dist_pc: planet.dist_pc.value,
       sourcesCount: meta?.sourcesCount ?? 0,
-      qBadge: qBadge(row.score.Q_data),
+      Q_data: row.score.Q_data,
+      qLevel: qLevel(row.score.Q_data),
+      provenance: {
+        R: planet.R.provenance,
+        M: planet.M.provenance,
+        e: planet.e.provenance,
+      },
+      lowReliability: planet.flags.levelB_mass || planet.flags.levelB_radius,
+      insufficient: planet.flags.insufficient_data,
       levelB_mass: planet.flags.levelB_mass,
       levelB_radius: planet.flags.levelB_radius,
       e_assumed_zero: planet.flags.e_assumed_zero,
@@ -118,6 +157,8 @@ export function createRankingEngine(): RankingEngine {
               {
                 name: record.name,
                 hostname: record.hostname,
+                letter: record.letter,
+                aliases: [...record.aliases],
                 sourcesCount: record.sources.length,
               },
             ]),
@@ -136,6 +177,11 @@ export function createRankingEngine(): RankingEngine {
             request.filters,
             toSortState(request.sort),
           );
+
+          // Карточка считает по тем же настройкам и тем же рангам (задача 19).
+          lastSettings = request.settings;
+          lastScores = new Map(ranking.rows.map((row) => [row.planetId, row.score]));
+          lastClassicRanks = ranking.classicRanks;
 
           return {
             type: 'result',
@@ -161,13 +207,74 @@ export function createRankingEngine(): RankingEngine {
           return {
             type: 'positions',
             requestId: request.requestId,
-            items: resolved.map((planet) => ({
-              id: planet.id,
-              ra: planet.ra.value,
-              dec: planet.dec.value,
-              dist_pc: planet.dist_pc.value,
-            })),
+            items: resolved.map((planet) => {
+              const hostname = display.get(planet.id)?.hostname ?? '';
+              const hostKey = normalizeName(hostname);
+
+              return {
+                id: planet.id,
+                hostKey,
+                ra: planet.ra.value,
+                dec: planet.dec.value,
+                dist_pc: planet.dist_pc.value,
+                st_teff: planet.st_teff.value,
+              };
+            }),
           };
+        }
+
+        case 'getPlanetDetail': {
+          requireInitialized();
+
+          const planet = byId.get(request.id);
+
+          if (planet === undefined) throw new Error(`Планета не найдена: ${request.id}`);
+
+          const meta = display.get(planet.id);
+          const hzResult = computeHz({
+            st_teff: planet.st_teff.value,
+            L: planet.L.value,
+            d: planet.d.value,
+            e: planet.e.value,
+            bounds: lastSettings.hzBounds,
+          });
+
+          // Границы показываются, только когда посчитаны все пять величин:
+          // карточка и 3D-сцена берут их из одной функции (11.4).
+          const hz =
+            hzResult.d_in !== null &&
+            hzResult.d_out !== null &&
+            hzResult.d_eff !== null &&
+            hzResult.HZD !== null &&
+            hzResult.F_HZ !== null
+              ? {
+                  d_in: hzResult.d_in,
+                  d_out: hzResult.d_out,
+                  d_eff: hzResult.d_eff,
+                  HZD: hzResult.HZD,
+                  F_HZ: hzResult.F_HZ,
+                }
+              : null;
+
+          const score = lastScores.get(planet.id) ?? scorePlanet(planet, lastSettings);
+
+          const detail: PlanetDetail = {
+            id: planet.id,
+            name: meta?.name ?? planet.id,
+            hostname: meta?.hostname ?? null,
+            letter: meta?.letter ?? null,
+            aliases: meta?.aliases ?? [],
+            sourcesCount: meta?.sourcesCount ?? 0,
+            resolved: planet,
+            score,
+            classicRank: lastClassicRanks.get(planet.id) ?? null,
+            hz,
+            world: classifyWorld(planet),
+            gaps: renderGaps(planet),
+            inTop: lastScores.has(planet.id),
+          };
+
+          return { type: 'detail', requestId: request.requestId, detail };
         }
 
         default: {

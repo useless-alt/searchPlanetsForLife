@@ -658,6 +658,66 @@ select:disabled {
   background: var(--color-surface);
 }
 
+/* ---------------------------------------------------------------- уведомления (задача 20) */
+.ui-toasts {
+  position: fixed;
+  right: var(--space-5);
+  bottom: var(--space-5);
+  z-index: var(--z-toast);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: min(420px, calc(100vw - 2 * var(--space-5)));
+  pointer-events: none;
+}
+
+.ui-toast {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4);
+  background: var(--color-surface-inverse);
+  color: var(--color-text-inverse);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-2);
+  pointer-events: auto;
+}
+
+.ui-toast__text {
+  flex: 1;
+  margin: 0;
+  font-size: var(--text-small);
+  line-height: var(--leading-body);
+}
+
+.ui-toast__close.ui-btn--icon {
+  flex: none;
+  color: var(--color-text-inverse);
+  border-color: transparent;
+}
+
+.ui-toast__close.ui-btn--icon:hover {
+  background: rgba(245, 247, 247, 0.12);
+}
+
+/* ---------------------------------------------------------------- ссылка (задача 20) */
+.share-fallback {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  color: var(--color-text);
+}
+
+.share-fallback__text {
+  margin: 0 0 var(--space-2);
+  color: var(--color-text-muted);
+}
+
+.share-fallback__input {
+  font-family: var(--font-mono);
+  font-size: var(--text-small);
+}
+
 /* ---------------------------------------------------------------- выдвижная панель */
 .ui-panel {
   position: fixed;
@@ -1065,6 +1125,83 @@ select:disabled {
   margin-left: auto;
 }
 
+/* ---------------------------------------------------------------- режим служебных данных (задача 18) */
+.extra-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--control-height);
+  padding: 0 var(--space-2);
+  color: var(--color-text-muted);
+  font-size: var(--text-label);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.extra-toggle:hover .extra-toggle__label {
+  color: var(--color-text);
+}
+
+/* Поле визуально скрыто, но остаётся в порядке табуляции и доступном дереве. */
+.extra-toggle__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  border: 0;
+  white-space: nowrap;
+}
+
+.extra-toggle__track {
+  position: relative;
+  flex: none;
+  width: 36px;
+  height: 20px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-sunken);
+  transition:
+    background-color var(--duration-in) var(--ease),
+    border-color var(--duration-in) var(--ease);
+}
+
+.extra-toggle__track::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: var(--radius-pill);
+  background: var(--color-text-muted);
+  transition:
+    transform var(--duration-in) var(--ease),
+    background-color var(--duration-in) var(--ease);
+}
+
+.extra-toggle__input:checked + .extra-toggle__track {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+}
+
+.extra-toggle__input:checked + .extra-toggle__track::after {
+  transform: translateX(16px);
+  background: var(--color-accent-ink);
+}
+
+.extra-toggle__input:focus-visible + .extra-toggle__track {
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.extra-toggle__label {
+  transition: color var(--duration-in) var(--ease);
+}
+
 /* Индикатор источника: точка с текстовой подписью (не только цвет). */
 .header__dot {
   flex: none;
@@ -1140,6 +1277,14 @@ select:disabled {
   color: var(--color-negative);
 }
 
+.sources__technical {
+  color: var(--color-text-subtle);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-body);
+  overflow-wrap: anywhere;
+}
+
 .sources__actions {
   display: flex;
   flex-wrap: wrap;
@@ -1155,7 +1300,395 @@ select:disabled {
   white-space: nowrap;
 }
 
+/* ---------------------------------------------------------------- панель инструментов (задача 14) */
+.toolbar {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.toolbar__search {
+  position: relative;
+  flex: 1 1 320px;
+  max-width: 520px;
+}
+
+.toolbar__found {
+  margin: 0;
+}
+
+.toolbar__actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+
+.toolbar__list {
+  position: absolute;
+  top: calc(100% + var(--space-1));
+  right: 0;
+  left: 0;
+  z-index: var(--z-tooltip);
+  display: grid;
+  gap: 2px;
+  max-height: 320px;
+  margin: 0;
+  padding: var(--space-1);
+  overflow: auto;
+  list-style: none;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-2);
+}
+
+.toolbar__option {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  min-height: var(--control-height-sm);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.toolbar__option--active,
+.toolbar__option:hover {
+  background: var(--color-accent-soft);
+}
+
+.toolbar__option-name {
+  font-weight: var(--weight-medium);
+}
+
+.toolbar__option-host {
+  color: var(--color-text-muted);
+  font-size: var(--text-small);
+}
+
+.toolbar__option-note {
+  margin-left: auto;
+  color: var(--color-text-muted);
+  font-size: var(--text-label);
+  white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------- панель параметров модели (задача 14) */
+/* Прозрачная подложка ловит клик вне панели и закрывает её без применения. */
+.model-params__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--z-panel) - 1);
+  background: transparent;
+}
+
+.model-params {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.model-params__group {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.model-params__title {
+  font-size: var(--text-body);
+  font-weight: var(--weight-medium);
+}
+
+.model-params__checks {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.model-params__note {
+  color: var(--color-warning);
+  font-size: var(--text-small);
+}
+
+/* ---------------------------------------------------------------- панель фильтров (задача 15) */
+/* Прозрачная подложка ловит клик вне панели и закрывает её без применения. */
+.filters__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--z-panel) - 1);
+  background: transparent;
+}
+
+.filters {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.filters__group {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.filters__title {
+  font-size: var(--text-body);
+  font-weight: var(--weight-medium);
+}
+
+.filters__classes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.filters__counter {
+  margin: 0;
+  font-weight: var(--weight-medium);
+}
+
+.filters__empty {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--color-surface-sunken);
+  border-radius: var(--radius-md);
+}
+
+.filters__empty-text {
+  margin: 0;
+}
+
+.filters__earth {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  background: var(--color-surface-sunken);
+  border-radius: var(--radius-md);
+}
+
+.filters__earth p {
+  margin: 0;
+}
+
+.filters__earth-reference {
+  font-weight: var(--weight-medium);
+}
+
+.filters__note {
+  color: var(--color-text-muted);
+  font-size: var(--text-small);
+}
+
+.filters__share {
+  color: var(--color-text);
+}
+
+/* ---------------------------------------------------------------- таблица Топ-50 (задача 16) */
+.top-table {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.top-table__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-5);
+}
+
+.top-table__title {
+  font-size: var(--text-h3);
+  font-weight: var(--weight-medium);
+}
+
+.top-table__controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-3) var(--space-4);
+}
+
+.top-table__note {
+  color: var(--color-text-muted);
+  font-size: var(--text-small);
+}
+
+/* Уведомление о выбранной планете вне Топ-50 (10.3.4). */
+.top-table__notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-info-bg);
+  border-radius: var(--radius-md);
+}
+
+.top-table__notice-text {
+  color: var(--color-text);
+  font-size: var(--text-small);
+}
+
+.top-table__empty-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* Горизонтальная прокрутка живёт внутри контейнера: страница не едет.
+   Закреплённый заголовок работает, пока у контейнера есть свой скроллпорт. */
+.top-table__scroll {
+  max-height: calc(100vh - 220px);
+  overflow: auto;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.top-table__table {
+  min-width: 1120px;
+}
+
+.top-table__row {
+  cursor: pointer;
+}
+
+.top-table__row td {
+  vertical-align: top;
+}
+
+.top-table__row[aria-selected='true'] {
+  background: var(--color-accent-soft);
+  box-shadow: inset 3px 0 0 var(--color-accent);
+}
+
+.top-table__row[data-search-match='true'] {
+  box-shadow: inset 3px 0 0 var(--color-info);
+}
+
+.top-table__row[aria-selected='true'][data-search-match='true'] {
+  box-shadow:
+    inset 3px 0 0 var(--color-accent),
+    inset 6px 0 0 var(--color-info);
+}
+
+.top-table__row:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: calc(-1 * var(--focus-ring-width));
+  border-radius: 0;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .top-table__row:not([aria-selected='true']):hover {
+    background: var(--color-surface-sunken);
+  }
+}
+
+.top-table__planet {
+  min-width: 220px;
+}
+
+.top-table__planet-name {
+  font-size: var(--text-body);
+  font-weight: var(--weight-medium);
+}
+
+.top-table__planet-sub {
+  display: block;
+  margin-top: 2px;
+  color: var(--color-text-muted);
+  font-size: var(--text-label);
+}
+
+.top-table__sources {
+  font-variant-numeric: tabular-nums;
+}
+
+.top-table__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+}
+
+.top-table__index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.top-table__q,
+.top-table__class {
+  white-space: nowrap;
+}
+
+.top-table__action {
+  text-align: right;
+  white-space: nowrap;
+}
+
 /* ---------------------------------------------------------------- меньше движения */
+/* ---------------------------------------------------------------- подсказки (задача 17) */
+.help-tooltip {
+  position: fixed;
+  z-index: var(--z-tooltip);
+  width: max-content;
+  max-width: var(--tooltip-max-width);
+  padding: var(--tooltip-padding);
+  border: 1px solid var(--tooltip-border);
+  border-radius: var(--tooltip-radius);
+  background: var(--tooltip-bg);
+  color: var(--tooltip-color);
+  box-shadow: var(--tooltip-shadow);
+  pointer-events: none;
+  font-size: var(--text-small);
+  line-height: var(--leading-body);
+  animation: help-tooltip-in var(--duration-in) var(--ease-enter);
+}
+
+.help-tooltip__title {
+  font-weight: var(--weight-medium);
+  line-height: var(--leading-tight);
+}
+
+.help-tooltip__value {
+  margin-top: var(--space-1);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+}
+
+.help-tooltip__block {
+  margin-top: var(--space-2);
+}
+
+.help-tooltip__label {
+  color: var(--tooltip-muted);
+  font-size: var(--text-label);
+  letter-spacing: 0.01em;
+}
+
+.help-tooltip__text {
+  margin-top: 2px;
+}
+
+@keyframes help-tooltip-in {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -1170,4 +1703,578 @@ select:disabled {
   .ui-btn:not(:disabled):active {
     transform: none;
   }
+}
+
+/* ---------------------------------------------------------------- �������� ������� (������ 19) */
+.app-main--with-panel {
+  padding-right: calc(min(100%, 520px) + var(--space-6));
+}
+
+.planet-card {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: var(--z-panel);
+  width: min(100%, 520px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5) var(--space-7);
+  overflow-y: auto;
+  background: var(--color-surface);
+  border-left: 1px solid var(--color-border);
+  box-shadow: var(--shadow-2);
+  animation: ui-panel-in var(--duration-panel) var(--ease) both;
+}
+
+.planet-card__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.planet-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.planet-card__heading {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.planet-card__title {
+  font-size: var(--text-h2);
+  font-weight: var(--display-weight);
+  letter-spacing: var(--display-tracking);
+  line-height: var(--leading-tight);
+  outline: none;
+}
+
+.planet-card__title:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.planet-card__world {
+  color: var(--color-text-muted);
+  font-size: var(--text-small);
+}
+
+.planet-card__close {
+  flex: 0 0 auto;
+  font-size: var(--text-lead);
+}
+
+.planet-card__hint {
+  color: var(--color-text-subtle);
+  font-size: var(--text-small);
+}
+
+.planet-card__viewport {
+  min-height: 140px;
+  display: grid;
+  align-items: center;
+  background: var(--color-surface-sunken);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+}
+
+.planet-card__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.planet-card__notice {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+  font-size: var(--text-small);
+}
+
+.planet-card__subtitle {
+  font-size: var(--text-h3);
+  font-weight: var(--weight-medium);
+}
+
+.planet-card__note {
+  color: var(--color-text-muted);
+  font-size: var(--text-small);
+}
+
+.planet-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+}
+
+.planet-params,
+.planet-hz,
+.planet-decomp {
+  display: grid;
+  gap: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+}
+
+.planet-params__table,
+.planet-decomp__table {
+  width: 100%;
+}
+
+.planet-params__label {
+  font-weight: var(--weight-regular);
+  color: var(--color-text-muted);
+  text-align: left;
+}
+
+.planet-params__label abbr {
+  text-decoration: none;
+  border-bottom: 1px dotted var(--color-border-strong);
+  cursor: help;
+}
+
+.planet-params__value {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.planet-params__origin {
+  white-space: nowrap;
+}
+
+.planet-params__alt {
+  color: var(--color-text-subtle);
+  font-size: var(--text-label);
+  text-align: left;
+}
+
+.planet-params__alt-item {
+  display: block;
+}
+
+.planet-hz__bounds {
+  color: var(--color-text-muted);
+  font-size: var(--text-small);
+}
+
+.planet-hz__missing {
+  color: var(--color-text-muted);
+  font-size: var(--text-small);
+}
+
+.planet-hz__grid {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.planet-hz__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding-bottom: var(--space-1);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.planet-hz__row dt {
+  color: var(--color-text-muted);
+}
+
+.planet-hz__row dd {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.planet-decomp__toggle {
+  padding-inline: 0;
+}
+
+.planet-decomp__chevron {
+  margin-left: var(--space-2);
+  color: var(--color-text-muted);
+}
+
+.planet-decomp__label {
+  font-weight: var(--weight-regular);
+  text-align: left;
+}
+
+.planet-decomp__delta {
+  display: block;
+  font-size: var(--text-label);
+  color: var(--color-negative);
+}
+
+/* ---------------------------------------------------------------- общий вьюпорт 3D (задача 22; U40) */
+.viewport-view {
+  position: relative;
+  width: 100%;
+  min-height: 360px;
+  height: 100%;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background: var(--map-bg);
+}
+
+.viewport-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-map);
+  pointer-events: none;
+}
+
+.viewport-overlay__flying {
+  position: absolute;
+  right: var(--space-4);
+  bottom: var(--space-4);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: rgba(11, 16, 20, 0.82);
+  color: var(--color-text-inverse);
+  font-size: var(--text-small);
+  pointer-events: auto;
+}
+
+.viewport-overlay__flying-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.scene-controls {
+  position: absolute;
+  inset: var(--space-4);
+  pointer-events: none;
+}
+
+.scene-controls__corner {
+  position: absolute;
+  display: flex;
+  gap: var(--space-2);
+  pointer-events: auto;
+}
+
+.scene-controls__corner--top-left {
+  top: 0;
+  left: 0;
+  flex-wrap: wrap;
+  max-width: 60%;
+}
+
+.scene-controls__corner--top-right {
+  top: 0;
+  right: 0;
+  flex-direction: column;
+  align-items: flex-end;
+  max-width: 48%;
+}
+
+.scene-controls__corner--bottom-left {
+  bottom: 0;
+  left: 0;
+}
+
+.scene-controls__corner--bottom-right {
+  right: 0;
+  bottom: 0;
+}
+
+.scene-controls__group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border: 1px solid var(--color-border-inverse);
+  border-radius: var(--radius-md);
+  background: rgba(11, 16, 20, 0.72);
+}
+
+.scene-controls__label {
+  color: var(--color-text-inverse);
+  font-size: var(--text-label);
+  font-weight: var(--weight-medium);
+}
+
+.scene-controls__note {
+  margin: 0;
+  max-width: 280px;
+  color: var(--color-text-inverse);
+  font-size: var(--text-label);
+  line-height: var(--leading-body);
+  text-align: right;
+}
+
+.scene-controls__toggles {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.scene-toggle {
+  min-height: var(--control-height-sm);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border-inverse);
+  border-radius: var(--radius-pill);
+  background: rgba(11, 16, 20, 0.72);
+  color: var(--color-text-inverse);
+  font: var(--weight-medium) var(--text-label) / 1 var(--font-text);
+  transition:
+    background-color var(--duration-in) var(--ease),
+    color var(--duration-in) var(--ease),
+    border-color var(--duration-in) var(--ease);
+}
+
+.scene-toggle[aria-pressed='true'] {
+  border-color: var(--color-leader);
+  background: var(--color-leader);
+  color: var(--color-space);
+}
+
+.scene-toggle[aria-disabled='true'] {
+  color: var(--color-text-disabled);
+  border-style: dashed;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .scene-toggle[aria-disabled='true']:hover {
+    cursor: not-allowed;
+  }
+}
+
+.fade-curtain {
+  position: absolute;
+  inset: 0;
+  z-index: calc(var(--z-map) + 5);
+  background: var(--color-space);
+  opacity: 0;
+  transition-property: opacity;
+  transition-timing-function: var(--ease);
+  pointer-events: none;
+}
+
+.fade-curtain--active {
+  opacity: 1;
+}
+
+/* ---------------------------------------------------------------- 3D-карта Галактики (задача 21; п. 6, 10.8) */
+.galaxy-view {
+  position: relative;
+  width: 100%;
+  min-height: 360px;
+  height: 100%;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background: var(--map-bg);
+}
+
+.galaxy-view__canvas {
+  position: absolute;
+  inset: 0;
+}
+
+.galaxy-view__status {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  color: var(--color-text-inverse);
+  font-size: var(--text-small);
+  pointer-events: none;
+}
+
+.map-labels {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.reticle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 12px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-leader);
+  font: inherit;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: margin-left var(--reticle-duration, 250ms) var(--ease);
+}
+
+.reticle:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-leader);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.reticle__cross {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  color: var(--color-leader);
+  filter: drop-shadow(0 0 3px rgba(16, 185, 129, 0.55));
+}
+
+.reticle--selected {
+  z-index: 2;
+}
+
+.reticle--selected .reticle__cross {
+  color: var(--color-text-inverse);
+  box-shadow: 0 0 0 2px var(--color-leader);
+}
+
+.reticle--flash {
+  z-index: 3;
+}
+
+.reticle__label {
+  position: absolute;
+  top: 50%;
+  left: calc(100% - 6px);
+  max-width: 240px;
+  padding: 2px var(--space-2);
+  border: 1px solid var(--color-border-inverse);
+  border-radius: var(--radius-sm);
+  background: rgba(11, 16, 20, 0.78);
+  color: var(--color-text-inverse);
+  font-size: var(--text-label);
+  line-height: var(--leading-tight);
+  white-space: nowrap;
+  opacity: 0;
+  transform: translate(-4px, -50%);
+  transition:
+    opacity var(--duration-in) var(--ease),
+    transform var(--duration-in) var(--ease);
+  pointer-events: none;
+}
+
+.reticle--labeled .reticle__label,
+.reticle:hover .reticle__label,
+.reticle:focus-visible .reticle__label {
+  opacity: 1;
+  transform: translate(0, -50%);
+}
+
+.reticle--flash .reticle__cross {
+  animation: reticle-flash 1s var(--ease) 2;
+}
+
+@keyframes reticle-flash {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.35);
+    filter: drop-shadow(0 0 7px var(--color-leader));
+  }
+}
+
+.map-overlay {
+  position: absolute;
+  right: var(--space-4);
+  bottom: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-2);
+  z-index: var(--z-map);
+  pointer-events: none;
+}
+
+.map-overlay__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-2);
+  pointer-events: auto;
+}
+
+.map-overlay__notice {
+  margin: 0;
+  max-width: 320px;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-inverse);
+  color: var(--color-text-inverse);
+  font-size: var(--text-label);
+  line-height: var(--leading-body);
+  pointer-events: auto;
+}
+
+.galaxy-fallback {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  background: var(--color-surface);
+}
+
+.galaxy-fallback__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--space-2);
+  max-height: 360px;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  list-style: none;
+}
+
+.galaxy-fallback__button {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: var(--control-height);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.galaxy-fallback__button:hover,
+.galaxy-fallback__button:focus-visible {
+  border-color: var(--color-leader-ink);
+  background: var(--color-accent-soft);
+}
+
+.galaxy-fallback__button:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.galaxy-fallback__rank {
+  min-width: 2ch;
+  color: var(--color-leader-ink);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }

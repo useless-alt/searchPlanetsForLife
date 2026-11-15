@@ -1,3 +1,5 @@
+import type { HTMLAttributes } from 'react';
+
 /**
  * Бейдж (задача 12a).
  *
@@ -5,6 +7,9 @@
  * («Измерено», «Высокая», «Реконструкция по расчётной модели» и т. д.).
  * Виды бейджей: достоверность Q_data (U8), происхождение значения
  * (п. 4.3, 11.1; U15) и служебные метки карточки планеты.
+ *
+ * Прочие атрибуты пробрасываются на `<span>`: `ExtraOnly` помечает
+ * служебный бейдж атрибутом `data-extra` (задача 18).
  */
 
 /** Вид бейджа. */
@@ -41,7 +46,7 @@ export type BadgeKind =
   | 'neutral';
 
 /** Пропсы бейджа. */
-export interface BadgeProps {
+export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
   /** Текстовая метка (обязательна: цвет не заменяет текст). */
   label: string;
   /** Вид бейджа. */
@@ -53,11 +58,11 @@ export interface BadgeProps {
 }
 
 /** Бейдж с текстовой меткой. */
-export function Badge({ label, kind = 'neutral', title, className }: BadgeProps) {
+export function Badge({ label, kind = 'neutral', title, className, ...rest }: BadgeProps) {
   const classes = ['ui-badge', `ui-badge--${kind}`, className].filter(Boolean).join(' ');
 
   return (
-    <span className={classes} title={title}>
+    <span {...rest} className={classes} title={title}>
       {label}
     </span>
   );

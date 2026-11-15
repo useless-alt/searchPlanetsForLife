@@ -26,6 +26,18 @@ export const Q_BADGE_THRESHOLDS = {
   medium: 0.85,
 } as const;
 
+/**
+ * Пороги шкалы калибровки «Земля (эталон)» (U35).
+ *
+ * Отдельная шкала, не совпадающая с порогами бейджей Q_data (U8):
+ * у эталона доля прошедших проверок 100 %, поэтому 89.2 % из 13.3
+ * попадает в «Высокую» уже при 85 %.
+ */
+export const CALIBRATION_THRESHOLDS = {
+  high: 0.85,
+  medium: 0.7,
+} as const;
+
 /** Названия бейджей достоверности (U8). */
 export const Q_BADGE_LABELS = {
   high: 'Высокая',

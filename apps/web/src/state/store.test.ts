@@ -238,7 +238,7 @@ describe('загрузка каталога', () => {
     });
 
     expect(mock.refresh).toHaveBeenCalledTimes(1);
-    expect(screen.getByText(ru['ready.title'])).toBeTruthy();
+    expect(screen.getByText(ru['table.title'])).toBeTruthy();
   });
 });
 
@@ -264,6 +264,9 @@ describe('пересчёт', () => {
         }),
       getResolved: async () => [],
       getPositions: async () => [],
+      getPlanetDetail: async () => {
+        throw new Error('деталь в этом тесте не используется');
+      },
       dispose: () => {},
     };
 

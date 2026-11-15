@@ -115,7 +115,7 @@ describe('бэкенд основного потока', () => {
     expect(result.counters.total).toBe(2);
     expect(result.rows[0]?.name).toMatch(/^Планета /);
     expect(result.rows[0]?.sourcesCount).toBe(1);
-    expect(result.rows[0]?.qBadge).toBe('high');
+    expect(result.rows[0]?.qLevel).toBe('high');
 
     const resolved = await backend.getResolved(['planet-1']);
     expect(resolved.map((item) => item.id)).toEqual(['planet-1']);
@@ -124,10 +124,27 @@ describe('бэкенд основного потока', () => {
     expect(positions).toHaveLength(2);
     expect(positions[0]).toEqual({
       id: 'planet-1',
+      hostKey: 'звезда1',
       ra: 1,
       dec: -89,
       dist_pc: 11,
+      st_teff: 5778,
     });
+
+    const detail = await backend.getPlanetDetail('planet-1');
+
+    expect(detail.id).toBe('planet-1');
+    expect(detail.name).toBe('Планета 1');
+    expect(detail.hostname).toBe('Звезда 1');
+    expect(detail.letter).toBe('b');
+    expect(detail.world).toBe('earthlike');
+    expect(detail.inTop).toBe(true);
+    expect(detail.score?.index).not.toBeNull();
+    expect(detail.classicRank).not.toBeNull();
+    expect(detail.hz?.d_in).toBeGreaterThan(0);
+    expect(detail.gaps).toEqual({ planet: [], star: [], planetStub: false, starStub: false });
+
+    await expect(backend.getPlanetDetail('missing')).rejects.toThrow('не найдена');
   });
 
   it('возвращает ошибку, если каталог ещё не передан', async () => {

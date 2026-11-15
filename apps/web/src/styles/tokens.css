@@ -77,6 +77,11 @@
   --color-hz-fill: rgba(125, 148, 173, 0.18); /* полупрозрачная зона обитаемости */
   --color-hz-edge: #7d94ad; /* граница зоны обитаемости */
 
+  /* ---------------------------------------------------------------- карта Галактики (задача 21; п. 6, 10.8; U44) */
+  --map-bg: #0b1014; /* фон 3D-карты Галактики */
+  --map-star-unknown: #8b8b8b; /* звезда с неизвестной температурой */
+  --map-ring: rgba(142, 160, 173, 0.35); /* кольца масштаба и опорные подписи */
+
   /* ---------------------------------------------------------------- типографика */
   --font-display: 'Schibsted Grotesk', system-ui, 'Segoe UI', sans-serif;
   --font-text: 'Schibsted Grotesk', system-ui, 'Segoe UI', sans-serif;
@@ -144,4 +149,16 @@
   --z-tooltip: 60; /* подсказки (задача 17) */
   --z-modal: 80; /* модальные окна */
   --z-toast: 90; /* временные уведомления */
+
+  /* ---------------------------------------------------------------- подсказки (задача 17) */
+  --tooltip-bg: var(--color-surface-inverse);
+  --tooltip-color: var(--color-text-inverse);
+  --tooltip-muted: #b9c0c5; /* подписи блоков: 8.4:1 на фоне подсказки */
+  --tooltip-border: var(--color-border-inverse);
+  --tooltip-radius: var(--radius-md);
+  --tooltip-padding: var(--space-3);
+  --tooltip-max-width: 360px;
+  --tooltip-offset: 12px; /* смещение от курсора и цели */
+  --tooltip-margin: 8px; /* отступ от края окна */
+  --tooltip-shadow: var(--shadow-3);
 }
