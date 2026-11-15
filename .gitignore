@@ -19,6 +19,22 @@ archive/
 # Резервные копии источников не коммитим, кроме плейсхолдера каталога.
 data/backups/*
 !data/backups/.gitkeep
+# Страховка для проверяющего: в репозитории лежат только актуальные снимки
+# источников (`latest.json`), версии с таймстампами остаются локальными (п. 8.2).
+!data/backups/nasa/
+!data/backups/exoplanet_eu/
+!data/backups/exomercat/
+!data/backups/gaia/
+!data/backups/simbad/
+!data/backups/exomast/
+data/backups/nasa/*
+data/backups/exoplanet_eu/*
+data/backups/exomercat/*
+data/backups/gaia/*
+data/backups/simbad/*
+data/backups/exomast/*
+!data/backups/*/latest.json
+!data/backups/exomast/index.json
 
 # Локальные архивы резервных копий (выгрузка в Supabase).
 data/archives/

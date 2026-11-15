@@ -39,6 +39,14 @@ export const DEFAULT_PORT = 8787;
 /** Каталог резервных копий по умолчанию (то же значение, что в `.env.example`). */
 export const DEFAULT_BACKUP_DIR = 'data/backups';
 
+/**
+ * Корень репозитория — база для относительных путей данных.
+ *
+ * Одинаково верно и для исходников (`apps/server/src`), и для сборки
+ * (`apps/server/dist`): от файла до корня ровно три уровня вверх.
+ */
+const REPO_ROOT = fileURLToPath(new URL('../../../', import.meta.url));
+
 /** Число хранимых версий по умолчанию (минимум п. 8.2). */
 export const DEFAULT_BACKUP_KEEP_VERSIONS = BACKUP_MIN_VERSIONS;
 
@@ -54,7 +62,9 @@ export interface BackupEnvConfig {
  * Читает настройки хранилища из переменных окружения
  * (`BACKUP_DIR`, `BACKUP_KEEP_VERSIONS` — см. `.env.example`).
  *
- * Относительный `BACKUP_DIR` разрешается от текущего рабочего каталога.
+ * Относительный `BACKUP_DIR` разрешается от корня репозитория, а не от
+ * текущего каталога: `npm start` и `npm run refresh` запускаются с
+ * cwd = `apps/server`, и без этого копии уезжали бы в `apps/server/data/backups`.
  */
 export function readBackupEnv(env: NodeJS.ProcessEnv = process.env): BackupEnvConfig {
   const rawDir = env.BACKUP_DIR?.trim();
@@ -62,7 +72,7 @@ export function readBackupEnv(env: NodeJS.ProcessEnv = process.env): BackupEnvCo
   const rawKeep = Number.parseInt(env.BACKUP_KEEP_VERSIONS ?? '', 10);
   const keepVersions =
     Number.isFinite(rawKeep) && rawKeep > 0 ? rawKeep : DEFAULT_BACKUP_KEEP_VERSIONS;
-  return { dir: path.resolve(process.cwd(), dir), keepVersions };
+  return { dir: path.resolve(REPO_ROOT, dir), keepVersions };
 }
 
 /** Создаёт хранилище резервных копий по настройкам окружения. */

@@ -20,6 +20,7 @@
 
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { BACKUP_SCHEMA_VERSION } from '@exo/shared';
 
@@ -50,10 +51,13 @@ function requiredSources(): string[] {
     .filter((value) => value.length > 0);
 }
 
+/** Корень репозитория: относительный `BACKUP_DIR` считается от него, а не от cwd. */
+const REPO_ROOT = fileURLToPath(new URL('../../../../', import.meta.url));
+
 /** Каталог резервных копий (тот же, что у сервера, п. 8.1). */
 function backupDir(): string {
   const raw = process.env.BACKUP_DIR?.trim();
-  return path.resolve(process.cwd(), raw && raw.length > 0 ? raw : 'data/backups');
+  return path.resolve(REPO_ROOT, raw && raw.length > 0 ? raw : 'data/backups');
 }
 
 /** Сколько версий копии хранить (п. 8.2). */
