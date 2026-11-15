@@ -55,7 +55,7 @@ export const EXTRA_REGISTRY = [
   {
     id: 'scene.qdata',
     where: '3D-вьюпорт',
-    description: 'бейдж Q_data в сцене (10.9.7, добавляется в Задаче 27)',
+    description: 'бейдж Q_data в сцене (10.9.7)',
   },
   {
     id: 'map.unplaced',
@@ -81,6 +81,16 @@ export const EXTRA_REGISTRY = [
     id: 'card.decomp.sub',
     where: 'карточка планеты',
     description: 'вложенные входы ESI_R, ESI_ρ и ESI_ve в декомпозиции режима RHI (10.7)',
+  },
+  {
+    id: 'card.exomast.raw',
+    where: 'карточка планеты',
+    description: 'первые 200 ключей сырого ответа Exo.MAST (задача 28)',
+  },
+  {
+    id: 'card.exomast.values',
+    where: 'карточка планеты',
+    description: 'значения Exo.MAST, отличающиеся от каталожных, в строке параметра (задача 28)',
   },
 ] as const satisfies readonly ExtraEntry[];
 

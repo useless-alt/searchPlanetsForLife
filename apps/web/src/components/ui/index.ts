@@ -20,6 +20,14 @@ export type { CheckboxProps } from './Checkbox';
 export { EmptyState } from './EmptyState';
 export type { EmptyStateProps } from './EmptyState';
 
+export { Glass } from './Glass';
+export type { GlassProps } from './Glass';
+
+export { Icon } from './Icon';
+export type { IconProps } from './Icon';
+export { ICON_NAMES, ICONS } from './icons';
+export type { IconName } from './icons';
+
 export { Input } from './Input';
 export type { InputProps, InputType } from './Input';
 

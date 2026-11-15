@@ -4,16 +4,23 @@ import * as THREE from 'three';
 import { three as threeTokens, tokens } from '../../styles/theme';
 import { disposeObject3D } from './disposeObject3D';
 import type { SystemContext } from './runtime';
-import type { VisualInstance } from './visuals';
+import type {
+  PlanetVisualHandle,
+  SpinController,
+  SpinCtx,
+  StarVisualHandle,
+} from './visuals/types';
 
 /**
- * Заглушки звезды и планеты (задача 22; п. 9.2; задача 27 — замена).
+ * Заглушки звезды и планеты (задача 22; п. 9.2; задачи 25, 27 — замена).
  *
- * Звезда — сфера `MeshBasicMaterial` цвета `teffToRGB(st_teff)`, планета —
- * сфера `MeshStandardMaterial` цвета класса мира. Настоящие текстуры,
- * атмосфера и вращение появятся в задачах 25–27; до этого заглушки дают
- * правильные размеры, цвета и освещение.
+ * Задача 25 использует заглушки как запасной вариант: серая сфера планеты
+ * и сфера звезды. Задача 27 заменит их через `registerStubFactory`, не
+ * меняя контракты `StarVisualHandle` и `PlanetVisualHandle`.
  */
+
+/** Минимум данных, нужный заглушке. */
+type PlaceholderCtx = Pick<SystemContext, 'detail' | 'scale'>;
 
 /** Цвет планеты по классу мира. */
 function worldColor(planet: Parameters<typeof classifyWorld>[0]): number {
@@ -36,45 +43,88 @@ function worldColor(planet: Parameters<typeof classifyWorld>[0]): number {
 }
 
 /** Создаёт заглушку звезды. */
-export function createStarPlaceholder(ctx: SystemContext): VisualInstance {
-  const color = teffToRGB(ctx.detail.resolved.st_teff.value);
-  const geometry = new THREE.SphereGeometry(ctx.scale.starRadius, 48, 32);
+export function createStarPlaceholder(ctx: PlaceholderCtx): StarVisualHandle {
+  const color = teffToRGB(ctx.detail.resolved.st_teff?.value ?? null);
+  const geometry = new THREE.SphereGeometry(1, 48, 32);
   const material = new THREE.MeshBasicMaterial({
     color: new THREE.Color(color.r / 255, color.g / 255, color.b / 255),
     toneMapped: false,
   });
-  const object = new THREE.Mesh(geometry, material);
+  const mesh = new THREE.Mesh(geometry, material);
+  const root = new THREE.Group();
 
-  object.name = 'star-placeholder';
-  object.renderOrder = RENDER_ORDER_STAR;
-  object.userData['placeholder'] = true;
+  mesh.scale.setScalar(Math.max(ctx.scale.starRadius, 1e-6));
+  mesh.name = 'star-placeholder';
+  mesh.renderOrder = RENDER_ORDER_STAR;
+  mesh.userData['placeholder'] = true;
+  root.name = 'star-placeholder';
+  root.add(mesh);
 
   return {
-    object,
+    root,
+    object: root,
+    setQuality(): void {
+      // Геометрия заглушки не зависит от профиля качества.
+    },
+    update(): void {
+      // Заглушка статична.
+    },
     dispose(): void {
-      disposeObject3D(object);
+      disposeObject3D(root);
     },
   };
 }
 
 /** Создаёт заглушку планеты. */
-export function createPlanetPlaceholder(ctx: SystemContext): VisualInstance {
-  const geometry = new THREE.SphereGeometry(ctx.scale.planetRadius, 48, 32);
+export function createPlanetPlaceholder(ctx: PlaceholderCtx): PlanetVisualHandle {
+  const geometry = new THREE.SphereGeometry(1, 48, 32);
   const material = new THREE.MeshStandardMaterial({
     color: worldColor(ctx.detail.resolved),
     roughness: 0.92,
     metalness: 0,
   });
-  const object = new THREE.Mesh(geometry, material);
+  const surface = new THREE.Mesh(geometry, material);
+  const axisGroup = new THREE.Group();
+  const root = new THREE.Group();
+  let spin: SpinController | null = null;
 
-  object.name = 'planet-placeholder';
-  object.renderOrder = RENDER_ORDER_PLANET;
-  object.userData['placeholder'] = true;
+  surface.scale.setScalar(Math.max(ctx.scale.planetRadius, 1e-6));
+  surface.name = 'planet-placeholder';
+  surface.renderOrder = RENDER_ORDER_PLANET;
+  surface.userData['placeholder'] = true;
+  axisGroup.add(surface);
+  root.name = 'planet-placeholder';
+  root.add(axisGroup);
 
   return {
-    object,
+    root,
+    object: root,
+    axisGroup,
+    surface,
+    clouds: null,
+    atmosphere: null,
+    setSunState(): void {
+      // Заглушка освещается общим PointLight сцены.
+    },
+    setQuality(): void {
+      // Геометрия заглушки не зависит от профиля качества.
+    },
+    setHints(): void {
+      // У заглушки нет атмосферы.
+    },
+    attachSpin(controller: SpinController | null): void {
+      if (spin === controller) return;
+
+      spin?.dispose();
+      spin = controller;
+    },
+    update(dtSec: number, spinCtx: SpinCtx): void {
+      spin?.update(dtSec, spinCtx);
+    },
     dispose(): void {
-      disposeObject3D(object);
+      spin?.dispose();
+      spin = null;
+      disposeObject3D(root);
     },
   };
 }

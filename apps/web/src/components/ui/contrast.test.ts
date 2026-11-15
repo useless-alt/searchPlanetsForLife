@@ -161,6 +161,46 @@ const PAIRS: ContrastPair[] = [
     min: 4.5,
   },
 
+  // Стеклянная панель (задача 27a): контраст к --glass-bg-solid, потому что
+  // именно она остаётся под текстом при отключённом размытии (U65).
+  { name: 'текст на стекле', foreground: 'color-text', background: 'glass-bg-solid', min: 4.5 },
+  {
+    name: 'приглушённый текст на стекле',
+    foreground: 'color-text-muted',
+    background: 'glass-bg-solid',
+    min: 4.5,
+  },
+  {
+    name: 'второстепенный текст на стекле',
+    foreground: 'color-text-subtle',
+    background: 'glass-bg-solid',
+    min: 4.5,
+  },
+  {
+    name: 'ссылка на стекле',
+    foreground: 'color-accent',
+    background: 'glass-bg-solid',
+    min: 4.5,
+  },
+  {
+    name: 'фокус на стекле',
+    foreground: 'color-focus',
+    background: 'glass-bg-solid',
+    min: 3,
+  },
+  {
+    name: 'сильная граница на стекле',
+    foreground: 'color-border-strong',
+    background: 'glass-bg-solid',
+    min: 3,
+  },
+  {
+    name: 'недоступный текст на стекле',
+    foreground: 'color-text-disabled',
+    background: 'glass-bg-solid',
+    min: 3,
+  },
+
   // Границы, фокус и прочие нетекстовые элементы.
   { name: 'фокус на холсте', foreground: 'color-focus', background: 'color-canvas', min: 3 },
   { name: 'фокус на поверхности', foreground: 'color-focus', background: 'color-surface', min: 3 },
@@ -249,8 +289,20 @@ const PAIRS: ContrastPair[] = [
     min: 3,
   },
   {
+    name: 'ядро линии орбиты на фоне космоса',
+    foreground: 'orbit-line',
+    background: 'color-space',
+    min: 3,
+  },
+  {
+    name: 'ядро линии орбиты на фоне карты',
+    foreground: 'orbit-line',
+    background: 'map-bg',
+    min: 3,
+  },
+  {
     name: 'граница зоны обитаемости на фоне космоса',
-    foreground: 'color-hz-edge',
+    foreground: 'hz-edge',
     background: 'color-space',
     min: 3,
   },
@@ -263,13 +315,17 @@ describe('контраст токенов', () => {
     expect(ratio).toBeGreaterThanOrEqual(min);
   });
 
-  it('изумрудный акцент не читается как текст на светлом фоне и заменён тёмным', () => {
-    // #10b981 — цвет меток Топ-50 в 3D (п. 6.2); на светлом фоне он не годится
-    // для текста, поэтому для надписей взят тёмный оттенок того же тона.
-    expect(contrastRatio(tokens['color-leader'], tokens['color-surface'])).toBeLessThan(4.5);
+  it('изумрудный лидер читается на космосе, а его текстовый оттенок — на стекле', () => {
+    // #10b981 — цвет меток Топ-50 в 3D (п. 6.2). На тёмном стекле он тоже
+    // читается, но для мелкого текста взят светлый оттенок того же тона:
+    // он держит 4.5:1 и не спорит с акцентом интерфейса.
+    expect(contrastRatio(tokens['color-leader'], tokens['color-space'])).toBeGreaterThanOrEqual(3);
     expect(
-      contrastRatio(tokens['color-leader-ink'], tokens['color-surface']),
+      contrastRatio(tokens['color-leader-ink'], tokens['glass-bg-solid']),
     ).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(tokens['color-accent'], tokens['glass-bg-solid'])).toBeGreaterThanOrEqual(
+      4.5,
+    );
   });
 });
 
@@ -316,6 +372,9 @@ describe('зеркало токенов', () => {
     expect(three.leader).toBe(toNumber('color-leader'));
     expect(three.leaderMuted).toBe(toNumber('color-leader-muted'));
     expect(three.orbit).toBe(toNumber('color-orbit'));
-    expect(three.hzEdge).toBe(toNumber('color-hz-edge'));
+    expect(three.orbitLine).toBe(toNumber('orbit-line'));
+    expect(three.orbitHalo).toBe(toNumber('orbit-halo'));
+    expect(three.hzFill).toBe(toNumber('hz-fill'));
+    expect(three.hzEdge).toBe(toNumber('hz-edge'));
   });
 });

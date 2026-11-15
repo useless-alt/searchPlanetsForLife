@@ -1,15 +1,19 @@
 import { SOURCES, type SourceId, type SourceStatus } from '@exo/shared';
 
 import { formatMessage, ru, type RuKey } from '../i18n/ru';
-import { Spinner } from './ui';
+import { Glass, Icon } from './ui';
 
 /**
- * Экран загрузки каталога (задача 12, п. 10.1).
+ * Экран загрузки каталога (задача 12, п. 10.1; тема — задача 27a).
  *
  * Пока сервер собирает снимок, показываются все шесть источников и их
  * текущие статусы: «Обновлено», «Используется резервная копия от {дата}»,
- * «Ошибка: резервной копии нет» (п. 8.3). Оформление — задача 12a: только
- * токены, чистый экран без лишних данных (п. 11.2).
+ * «Ошибка: резервной копии нет» (п. 8.3).
+ *
+ * 27a: вместо статичного кольца — орбитальная анимация (точка идёт по
+ * орбите вокруг планеты) и стеклянная панель. При
+ * `prefers-reduced-motion` точка стоит (CSS). Чистый экран, без счетчиков
+ * и лишних данных (п. 11.2).
  */
 
 /** Названия источников из словаря. */
@@ -60,32 +64,45 @@ export default function LoadingScreen({ sources }: LoadingScreenProps) {
   const bySource = new Map(sources.map((status) => [status.source, status]));
 
   return (
-    <section className="app-screen" aria-labelledby="loading-title">
+    <Glass as="section" className="app-screen loading-screen" aria-labelledby="loading-title">
       <h2 className="app-screen__title" id="loading-title">
         {ru['loading.title']}
       </h2>
 
-      <Spinner label={ru['ui.loading']} />
+      <div className="loading-screen__head">
+        <div className="loading-orbit" aria-hidden="true">
+          <span className="loading-orbit__ring" />
+          <Icon name="planet" size={22} className="loading-orbit__planet" />
+          <span className="loading-orbit__dot" />
+        </div>
+
+        <p className="loading-screen__status" role="status">
+          {ru['ui.loading']}
+        </p>
+      </div>
 
       <h3>{ru['loading.sourcesTitle']}</h3>
 
       <ul className="app-sources">
         {SOURCES.map((source) => {
           const status = bySource.get(source.id);
+          const state = status?.state ?? 'pending';
 
           return (
-            <li
-              key={source.id}
-              className="app-source"
-              data-source={source.id}
-              data-state={status?.state ?? 'pending'}
-            >
-              <span className="app-source__name">{ru[SOURCE_NAME_KEYS[source.id]]}</span>
+            <li key={source.id} className="app-source" data-source={source.id} data-state={state}>
+              <span className="app-source__name">
+                <Icon
+                  name={state === 'updated' ? 'check' : state === 'pending' ? 'orbit' : 'warning'}
+                  size={14}
+                  className="app-source__mark"
+                />
+                {ru[SOURCE_NAME_KEYS[source.id]]}
+              </span>
               <span className="app-source__state">{sourceStateText(status)}</span>
             </li>
           );
         })}
       </ul>
-    </section>
+    </Glass>
   );
 }

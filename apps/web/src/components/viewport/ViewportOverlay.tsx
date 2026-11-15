@@ -4,6 +4,7 @@ import { ru } from '../../i18n/ru';
 import { appStore, type AppStore } from '../../state/store';
 import { MapOverlay } from '../../three/map/MapOverlay';
 import { Button, Spinner } from '../ui';
+import { SceneBadges } from './SceneBadges';
 import { SceneControls } from './SceneControls';
 
 /**
@@ -43,7 +44,12 @@ export function ViewportOverlay({ store = appStore, unplacedCount = 0 }: Viewpor
         </div>
       ) : null}
 
-      {viewMode === 'system' ? <SceneControls store={store} /> : null}
+      {viewMode === 'system' ? (
+        <>
+          <SceneBadges store={store} />
+          <SceneControls store={store} />
+        </>
+      ) : null}
     </div>
   );
 }

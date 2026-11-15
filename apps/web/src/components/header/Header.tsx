@@ -1,10 +1,10 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useStore } from 'zustand';
 
 import { ExtraOnly } from '../../extra/ExtraOnly';
 import { ru } from '../../i18n/ru';
 import { appStore, type AppStore } from '../../state/store';
-import { Button, Modal, Spinner } from '../ui';
+import { Button, Icon, Modal, Spinner } from '../ui';
 import { Counters } from './Counters';
 import { ErrorLogView } from './ErrorLogView';
 import { ExtraToggle } from './ExtraToggle';
@@ -62,6 +62,7 @@ export function Header({ store = appStore }: HeaderProps = {}) {
 
   const [sourcesOpen, setSourcesOpen] = useState(false);
   const [errorLogOpen, setErrorLogOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
 
   /** Открывает журнал ошибок и запрашивает его содержимое. */
   const handleOpenErrorLog = useCallback(() => {
@@ -73,13 +74,42 @@ export function Header({ store = appStore }: HeaderProps = {}) {
     void loadErrorLog();
   }, [loadErrorLog]);
 
+  // Меню «Ещё»: закрытие по Esc и по клику вне меню (U66).
+  useEffect(() => {
+    if (!moreOpen) return undefined;
+
+    const handleKeyDown = (event: KeyboardEvent): void => {
+      if (event.defaultPrevented) return;
+      if (event.key !== 'Escape') return;
+
+      event.preventDefault();
+      setMoreOpen(false);
+    };
+
+    const handlePointerDown = (event: MouseEvent): void => {
+      const target = event.target;
+
+      if (target instanceof Element && target.closest('.header__more') === null) {
+        setMoreOpen(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('mousedown', handlePointerDown);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('mousedown', handlePointerDown);
+    };
+  }, [moreOpen]);
+
   // Планета, выпавшая из Топ-50, остаётся в бейдже (10.3.5).
   const planetName =
     selectedPlanetId === null ? null : (catalogIndex[selectedPlanetId]?.name ?? selectedPlanetId);
 
   return (
     <>
-      <header className="header">
+      <header className="header ui-glass ui-glass--flush">
         <div className="header__inner">
           <h1 className="header__title">{ru['app.title']}</h1>
 
@@ -87,47 +117,75 @@ export function Header({ store = appStore }: HeaderProps = {}) {
             <Counters counters={counters} />
           </ExtraOnly>
 
-          <ModeSwitch
-            value={mode}
-            disabled={phase !== 'ready'}
-            onChange={(next) => setMode(next)}
-          />
-
           {planetName !== null ? (
             <SelectedPlanetBadge name={planetName} onOpen={() => setPlanetCardOpen(true)} />
           ) : null}
 
           <div className="header__actions">
             <Button variant="ghost" size="sm" onClick={requestCameraReset}>
+              <Icon name="orbit" size={14} />
               {ru['header.overview']}
             </Button>
 
-            <Button
-              variant="ghost"
-              size="sm"
-              disabled={actions.exportCsv === null}
-              onClick={() => actions.exportCsv?.()}
-            >
-              {ru['header.csv']}
-            </Button>
+            <div className="header__more">
+              <Button
+                variant="secondary"
+                size="sm"
+                aria-label={ru['header.more']}
+                aria-expanded={moreOpen}
+                aria-haspopup="menu"
+                onClick={() => setMoreOpen(!moreOpen)}
+              >
+                <Icon name="more" size={16} />
+                {ru['header.more']}
+              </Button>
 
-            <Button
-              variant="ghost"
-              size="sm"
-              disabled={actions.copyLink === null}
-              onClick={() => actions.copyLink?.()}
-            >
-              {ru['header.link']}
-            </Button>
+              {moreOpen ? (
+                <div className="header-menu ui-glass" role="menu" aria-label={ru['header.more']}>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="header-menu__item"
+                    disabled={actions.exportCsv === null}
+                    onClick={() => {
+                      setMoreOpen(false);
+                      actions.exportCsv?.();
+                    }}
+                  >
+                    <Icon name="csv" size={14} />
+                    {ru['header.csv']}
+                  </button>
 
-            <Button
-              variant="ghost"
-              size="sm"
-              disabled={actions.openMethodology === null}
-              onClick={() => actions.openMethodology?.()}
-            >
-              {ru['header.methodology']}
-            </Button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="header-menu__item"
+                    disabled={actions.copyLink === null}
+                    onClick={() => {
+                      setMoreOpen(false);
+                      actions.copyLink?.();
+                    }}
+                  >
+                    <Icon name="link" size={14} />
+                    {ru['header.link']}
+                  </button>
+
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="header-menu__item"
+                    disabled={actions.openMethodology === null}
+                    onClick={() => {
+                      setMoreOpen(false);
+                      actions.openMethodology?.();
+                    }}
+                  >
+                    <Icon name="info" size={14} />
+                    {ru['header.methodology']}
+                  </button>
+                </div>
+              ) : null}
+            </div>
 
             <SourcesButton sources={sources} onOpen={() => setSourcesOpen(true)} />
 
@@ -137,6 +195,7 @@ export function Header({ store = appStore }: HeaderProps = {}) {
               disabled={refreshing}
               onClick={() => void refresh()}
             >
+              <Icon name="refresh" size={14} />
               {ru['header.refresh']}
             </Button>
 
@@ -144,6 +203,15 @@ export function Header({ store = appStore }: HeaderProps = {}) {
 
             {refreshing ? <Spinner label={ru['header.refreshing']} size="sm" /> : null}
           </div>
+
+          {/* U66: вторая строка шапки — режим расчёта. */}
+          <span className="header__break" aria-hidden="true" />
+
+          <ModeSwitch
+            value={mode}
+            disabled={phase !== 'ready'}
+            onChange={(next) => setMode(next)}
+          />
         </div>
       </header>
 

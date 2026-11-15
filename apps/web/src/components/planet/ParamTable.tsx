@@ -1,16 +1,20 @@
 import {
+  computeRotation,
   surfaceTemperature,
   type ParamValue,
   type Provenance,
+  type RawParamKey,
   type ResolvedPlanet,
 } from '@exo/shared';
 import { Fragment } from 'react';
+import { useStore } from 'zustand';
 
 import { ExtraOnly } from '../../extra/ExtraOnly';
 import { U, type UnitSymbol } from '../../help/U';
 import { formatMessage, ru, SOURCE_NAME_KEYS } from '../../i18n/ru';
 import { approx, formatDist, formatNum, formatTemp } from '../../lib/format';
-import type { AppStore } from '../../state/store';
+import { appStore, type AppStore } from '../../state/store';
+import type { PlanetDetail } from '../../workers/protocol';
 import { Table, TableBody, TableHead, TableRow } from '../ui';
 import { OriginBadge } from './OriginBadge';
 
@@ -37,12 +41,27 @@ interface ParamRow {
   provenance: Provenance | null;
   /** Формат значения из задачи 16. */
   format: (value: number | null) => string;
+  /** Готовый текст вместо числа (например, «Вращение»). */
+  text?: string;
   /** Альтернативные значения других источников. */
   alternatives: ParamValue['alternatives'];
 }
 
+/** Текст строки «Вращение» (задача 26; п. 11.5; U54). */
+function rotationText(planet: ResolvedPlanet, planetStub: boolean): string {
+  if (planetStub) return ru['planet.rotation.stub'];
+
+  const rotation = computeRotation(planet);
+
+  if (rotation.mode === 'locked') return ru['planet.rotation.locked'];
+
+  return formatMessage(ru['planet.rotation.assumed'], {
+    hours: String(Math.round(rotation.periodDays * 24)),
+  });
+}
+
 /** Единицы и формат строк. */
-function rows(planet: ResolvedPlanet): ParamRow[] {
+function rows(planet: ResolvedPlanet, planetStub: boolean): ParamRow[] {
   return [
     {
       id: 'R',
@@ -96,6 +115,15 @@ function rows(planet: ResolvedPlanet): ParamRow[] {
       provenance: planet.P.provenance,
       format: formatNum,
       alternatives: planet.P.alternatives,
+    },
+    {
+      id: 'rotation',
+      label: ru['planet.params.rotation'],
+      value: null,
+      provenance: planetStub ? null : 'estimate',
+      format: () => '',
+      text: rotationText(planet, planetStub),
+      alternatives: [],
     },
     {
       id: 'S',
@@ -167,19 +195,50 @@ function rows(planet: ResolvedPlanet): ParamRow[] {
   ];
 }
 
-/** Пропсы таблицы параметров. */
-export interface ParamTableProps {
+/** Соответствие строки таблицы ключу извлечённых свойств Exo.MAST. */
+const EXOMAST_ROW_KEYS: Record<string, RawParamKey> = {
+  R: 'pl_rade',
+  M: 'pl_bmasse',
+  e: 'pl_orbeccen',
+  d: 'pl_orbsmax',
+  P: 'pl_orbper',
+  S: 'pl_insol',
+  T_s: 'pl_eqt',
+  T_star: 'st_teff',
+  R_sun: 'st_rad',
+  L_sun: 'st_lum',
+  st_mass: 'st_mass',
+  dist_pc: 'sy_dist',
+};
+
+/** Значения различаются больше чем на 1e-6 относительно. */
+export function exoMastValueDiffers(catalog: number | null, exomast: number): boolean {
+  if (catalog === null) return true;
+
+  const scale = Math.max(Math.abs(catalog), Math.abs(exomast), 1e-12);
+
+  return Math.abs(catalog - exomast) / scale > 1e-6;
+}
+
+/** Пропсы таблицы параметров. */ export interface ParamTableProps {
   /** Разрешённая планета. */
   planet: ResolvedPlanet;
   /** Идентификатор планеты для подсказок. */
   planetId: string;
+  /** Планета показана заглушкой: вращение не определено. */
+  planetStub?: boolean;
+  /** Деталь планеты; если передана, `planetStub` берётся из неё. */
+  detail?: Pick<PlanetDetail, 'gaps'>;
   /** Хранилище для режима служебных данных. */
   store?: AppStore;
 }
 
 /** Таблица параметров планеты и звезды. */
-export function ParamTable({ planet, planetId, store }: ParamTableProps) {
-  const items = rows(planet);
+export function ParamTable({ planet, planetId, planetStub, detail, store }: ParamTableProps) {
+  const stubbed = planetStub ?? detail?.gaps.planetStub ?? false;
+  const items = rows(planet, stubbed);
+  const resolvedStore = store ?? appStore;
+  const exoMastProps = useStore(resolvedStore, (state) => state.exoMast[planetId]?.props ?? null);
 
   return (
     <section className="planet-params" aria-labelledby={`planet-params-${planetId}`}>
@@ -200,7 +259,13 @@ export function ParamTable({ planet, planetId, store }: ParamTableProps) {
 
         <TableBody>
           {items.map((row) => {
-            const text = approx(row.format(row.value), row.provenance);
+            const text = row.text ?? approx(row.format(row.value), row.provenance);
+            const exoKey = EXOMAST_ROW_KEYS[row.id];
+            const exoValue = exoKey === undefined ? undefined : exoMastProps?.extracted?.[exoKey];
+            const showExo =
+              exoValue !== undefined &&
+              exoValue !== null &&
+              exoMastValueDiffers(row.value, exoValue);
 
             return (
               <Fragment key={row.id}>
@@ -222,6 +287,15 @@ export function ParamTable({ planet, planetId, store }: ParamTableProps) {
                     data-help-planet={planetId}
                   >
                     {text}
+                    {showExo ? (
+                      <ExtraOnly id="card.exomast.values" store={resolvedStore}>
+                        <span className="planet-params__exomast">
+                          {formatMessage(ru['exomast.value'], {
+                            value: row.format(exoValue),
+                          })}
+                        </span>
+                      </ExtraOnly>
+                    ) : null}
                   </td>
 
                   <td className="planet-params__origin">

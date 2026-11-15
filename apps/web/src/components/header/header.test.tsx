@@ -173,19 +173,20 @@ describe('бейдж выбранной планеты', () => {
 });
 
 describe('действия шапки', () => {
-  it('кнопки «CSV», «Ссылка» и «Методика» недоступны, пока действие не подключено', () => {
+  it('меню «Ещё»: пункты «CSV», «Ссылка» и «Методика» недоступны без действия', () => {
     const store = makeStore();
 
     render(<Header store={store} />);
+    fireEvent.click(screen.getByRole('button', { name: ru['header.more'] }));
 
     for (const label of [ru['header.csv'], ru['header.link'], ru['header.methodology']]) {
-      const button = screen.getByRole('button', { name: label }) as HTMLButtonElement;
+      const item = screen.getByRole('menuitem', { name: label }) as HTMLButtonElement;
 
-      expect(button.disabled).toBe(true);
+      expect(item.disabled).toBe(true);
     }
   });
 
-  it('после registerAction кнопка доступна и вызывает функцию', () => {
+  it('после registerAction пункт меню доступен и вызывает функцию', () => {
     const store = makeStore();
     const exportCsv = vi.fn();
 
@@ -195,11 +196,13 @@ describe('действия шапки', () => {
       store.getState().registerAction('exportCsv', exportCsv);
     });
 
-    const button = screen.getByRole('button', { name: ru['header.csv'] }) as HTMLButtonElement;
+    fireEvent.click(screen.getByRole('button', { name: ru['header.more'] }));
 
-    expect(button.disabled).toBe(false);
+    const item = screen.getByRole('menuitem', { name: ru['header.csv'] }) as HTMLButtonElement;
 
-    fireEvent.click(button);
+    expect(item.disabled).toBe(false);
+
+    fireEvent.click(item);
 
     expect(exportCsv).toHaveBeenCalledTimes(1);
   });

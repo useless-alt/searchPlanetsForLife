@@ -1,7 +1,7 @@
 import { SOURCE_PRIORITY, type SourceId, type SourceStatus } from '@exo/shared';
 
 import { formatMessage, ru } from '../../i18n/ru';
-import { Button } from '../ui';
+import { Button, Icon } from '../ui';
 
 /**
  * Кнопка «Источники (N/N + MAST)» в шапке (задача 13; п. 8.3, 13.1).
@@ -69,6 +69,7 @@ export function SourcesButton({ sources, onOpen }: SourcesButtonProps) {
       onClick={onOpen}
       aria-label={label}
     >
+      <Icon name="sources" size={14} />
       <span className="header__sources-label">{label}</span>
       {hasProblem ? <span className="header__dot header__dot--warning" aria-hidden="true" /> : null}
       <span

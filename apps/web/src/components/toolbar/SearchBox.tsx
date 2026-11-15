@@ -11,6 +11,7 @@ import {
   type SearchMatch,
 } from '../../state/searchSelectors';
 import { appStore, type AppStore } from '../../state/store';
+import { Icon } from '../ui';
 
 /**
  * Поле поиска с подсказками (задача 14; п. 13.2).
@@ -141,26 +142,29 @@ export function SearchBox({ store = appStore }: SearchBoxProps = {}) {
         {ru['search.label']}
       </label>
 
-      <input
-        id={inputId}
-        className="ui-field__input"
-        type="search"
-        role="combobox"
-        value={text}
-        autoComplete="off"
-        spellCheck={false}
-        data-help-key="search.field"
-        aria-expanded={open}
-        aria-controls={open ? listId : undefined}
-        aria-autocomplete="list"
-        aria-activedescendant={open && activeIndex >= 0 ? `${listId}-${activeIndex}` : undefined}
-        onChange={handleChange}
-        onKeyDown={handleKeyDown}
-        onBlur={() => {
-          setOpen(false);
-          setActive(-1);
-        }}
-      />
+      <div className="toolbar__input">
+        <Icon name="search" size={16} className="toolbar__input-icon" />
+        <input
+          id={inputId}
+          className="ui-field__input toolbar__input-field"
+          type="search"
+          role="combobox"
+          value={text}
+          autoComplete="off"
+          spellCheck={false}
+          data-help-key="search.field"
+          aria-expanded={open}
+          aria-controls={open ? listId : undefined}
+          aria-autocomplete="list"
+          aria-activedescendant={open && activeIndex >= 0 ? `${listId}-${activeIndex}` : undefined}
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
+          onBlur={() => {
+            setOpen(false);
+            setActive(-1);
+          }}
+        />
+      </div>
 
       {showFound ? (
         <p className="ui-field__hint toolbar__found" aria-live="polite">

@@ -1,7 +1,10 @@
-import type { ModelSettings } from '@exo/shared';
+import type { AtmosphereHints, ModelSettings } from '@exo/shared';
+import { computeHz } from '@exo/shared';
 import type * as THREE from 'three';
 
 import { showToast } from '../../components/ui/Toast';
+import { setDebugSystemScene } from '../../debug/sceneBridge';
+import { ExoMastBridge } from '../../exomast/bridge';
 import { ru } from '../../i18n/ru';
 import type { CameraState } from '../map/GalaxyScene';
 import type { ViewScene } from '../host/ViewScene';
@@ -59,6 +62,8 @@ export interface ControlledSystemScene {
   }): void;
   /** Переключает слои. */
   setToggles(toggles: Partial<SystemToggles>): void;
+  /** Подсказки об атмосфере из Exo.MAST (задача 28; U52). */
+  setHints(hints: AtmosphereHints | null): void;
   /** Освобождает ресурсы. */
   dispose(): void;
 }
@@ -125,6 +130,23 @@ async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T
   }
 }
 
+/** Совпадают ли границы HZ детали с текущими настройками (11.4). */
+function hzMatches(detail: PlanetDetail, settings: ModelSettings): boolean {
+  if (detail.hz === null) return true;
+
+  const expected = computeHz({
+    st_teff: detail.resolved.st_teff.value,
+    L: detail.resolved.L.value,
+    d: detail.resolved.d.value,
+    e: detail.resolved.e.value,
+    bounds: settings.hzBounds,
+  });
+
+  if (expected.d_in === null) return true;
+
+  return Math.abs(detail.hz.d_in - expected.d_in) < 1e-9;
+}
+
 /** Переводит статусы слоёв в формат хранилища. */
 function toStoreStatuses(statuses: SystemLayerStatusMap): Record<string, SystemLayerStatusEntry> {
   const result: Record<string, SystemLayerStatusEntry> = {};
@@ -158,6 +180,9 @@ export class SystemController {
   private readonly fadeMs: number;
 
   private readonly restoreCameraMs: number;
+
+  /** Мост Exo.MAST: ленивая загрузка и подсказки атмосферы (задача 28). */
+  private readonly exoMast: ExoMastBridge;
 
   /** Текущий режим контроллера. */
   private mode: ViewMode;
@@ -217,6 +242,10 @@ export class SystemController {
     this.fadeMs = options.fadeMs ?? 300;
     this.restoreCameraMs = options.restoreCameraMs ?? 600;
     this.mode = options.store.getState().viewMode;
+    this.exoMast = new ExoMastBridge({
+      store: this.store,
+      getTarget: () => this.systemScene,
+    });
   }
 
   /** Текущий режим контроллера. */
@@ -269,6 +298,7 @@ export class SystemController {
     this.unsubscribe = null;
     this.unsubscribeArrive?.();
     this.unsubscribeArrive = null;
+    this.exoMast.dispose();
 
     if (typeof document !== 'undefined') {
       document.removeEventListener('keydown', this.handleKeyDown);
@@ -340,7 +370,18 @@ export class SystemController {
 
     if (planetId === null) return;
 
-    const detail = await this.store.getState().refreshSceneDetail();
+    let detail = await this.store.getState().refreshSceneDetail();
+
+    // Пересчёт Топ-50 идёт параллельно с запросом детали. Если воркер ещё
+    // не применил новые настройки, границы HZ в детали не совпадут с
+    // карточкой. Повторяем запрос, пока совпадение не установится (11.4).
+    for (let attempt = 0; attempt < 6; attempt += 1) {
+      if (this.disposed || detail === null) break;
+      if (hzMatches(detail, this.store.getState().settings)) break;
+
+      await new Promise((resolve) => setTimeout(resolve, 150));
+      detail = await this.store.getState().refreshSceneDetail();
+    }
 
     if (
       this.disposed ||
@@ -381,6 +422,7 @@ export class SystemController {
     }
 
     if (this.mode === 'system' && state.scenePlanetId !== request.planetId) {
+      this.exoMast.begin(request.planetId);
       void this.beginSystem(request.planetId, request.target);
       return;
     }
@@ -398,6 +440,7 @@ export class SystemController {
       // запоминаем, чтобы вернуть её после выхода из системы.
       if (this.mode === 'galaxy') this.savedCamera = this.galaxy.getCameraState();
 
+      this.exoMast.begin(request.planetId);
       void this.beginSystem(request.planetId, request.target);
       return;
     }
@@ -405,6 +448,9 @@ export class SystemController {
     if (this.mode === 'galaxy') this.savedCamera = this.galaxy.getCameraState();
 
     const token = ++this.flightToken;
+
+    // Ленивый Exo.MAST стартует вместе с перелётом и не ждёт ответа (10.1.4).
+    this.exoMast.begin(request.planetId);
 
     this.pendingFlight = {
       token,
@@ -434,6 +480,9 @@ export class SystemController {
    */
   private async beginSystem(planetId: string, target: SceneTarget): Promise<void> {
     if (this.disposed) return;
+
+    // Переход в систему без перелёта тоже запускает ленивый запрос.
+    this.exoMast.begin(planetId);
 
     const token = ++this.systemToken;
 
@@ -480,10 +529,13 @@ export class SystemController {
     });
 
     this.mode = 'system';
+    setDebugSystemScene(this.systemScene as unknown as SystemScene);
     this.host.setScene(this.systemScene as unknown as ViewScene, {
       fadeMs: this.reducedMotion ? 0 : this.fadeMs,
     });
     this.store.setState({ viewMode: 'system', sceneTarget: target });
+    // Подписки уже могли прийти раньше сцены — применяем то, что есть.
+    this.exoMast.attach();
   }
 
   /** Освобождает объекты текущей сцены системы. */
@@ -495,6 +547,7 @@ export class SystemController {
     // Явно освобождаем дерево объектов (11.6), затем сцену и её контролы.
     disposeObject3D(scene.scene);
     scene.dispose();
+    setDebugSystemScene(null);
     this.systemScene = null;
   }
 
@@ -502,6 +555,7 @@ export class SystemController {
   private returnToGalaxy(): void {
     if (this.disposed) return;
 
+    this.exoMast.end();
     this.flightToken += 1;
     this.systemToken += 1;
     this.pendingFlight = null;

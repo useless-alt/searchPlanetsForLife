@@ -4,7 +4,7 @@ import { useStore } from 'zustand';
 import { ExtraOnly } from '../../extra/ExtraOnly';
 import { formatMessage, ru } from '../../i18n/ru';
 import { appStore, type AppStore } from '../../state/store';
-import { Badge, Button } from '../ui';
+import { Badge, Button, Icon } from '../ui';
 
 /**
  * Кнопка «Параметры модели» с бейджем активного порога Q_data
@@ -40,6 +40,7 @@ export function ModelParamsButton({ store = appStore }: ModelParamsButtonProps =
       aria-expanded={open}
       onClick={() => setModelPanelOpen(!open)}
     >
+      <Icon name="sliders" size={14} />
       {ru['params.button']}
       {showBadge ? (
         showExtraData ? (

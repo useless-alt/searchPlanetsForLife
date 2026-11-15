@@ -77,4 +77,44 @@ describe('SimClock', () => {
 
     expect(clock.elapsedSeconds).toBe(0);
   });
+
+  it('spinHours: 1 реальная секунда = 1 час', () => {
+    const clock = new SimClock(ORBIT_ANIMATION_SECONDS);
+
+    clock.advance(0.1);
+    clock.advance(0.1);
+    clock.advance(0.1);
+
+    expect(clock.spinHours()).toBeCloseTo(0.3, 12);
+    expect(clock.elapsedSeconds).toBeCloseTo(0.3, 12);
+  });
+
+  it('reducedMotion создаёт приостановленные часы', () => {
+    const clock = new SimClock(ORBIT_ANIMATION_SECONDS, { reducedMotion: true });
+
+    clock.advance(0.1);
+    clock.advance(0.1);
+
+    expect(clock.isPaused).toBe(true);
+    expect(clock.days()).toBe(0);
+    expect(clock.spinHours()).toBe(0);
+
+    clock.setPaused(false);
+    clock.advance(0.1);
+
+    expect(clock.isPaused).toBe(false);
+    expect(clock.spinHours()).toBeCloseTo(0.1, 12);
+  });
+
+  it('setPaused(true) останавливает и орбиту, и часы вращения', () => {
+    const clock = new SimClock(ORBIT_ANIMATION_SECONDS);
+
+    clock.advance(0.1);
+    clock.setPaused(true);
+    clock.advance(0.1);
+    clock.advance(0.1);
+
+    expect(clock.elapsedSeconds).toBeCloseTo(0.1, 12);
+    expect(clock.spinHours()).toBeCloseTo(0.1, 12);
+  });
 });

@@ -4,7 +4,7 @@ import { ru } from '../../i18n/ru';
 import { selectActiveFilterCount } from '../../state/selectors';
 import { appStore, type AppStore } from '../../state/store';
 import { FiltersPanel } from '../filters/FiltersPanel';
-import { Badge, Button, Checkbox } from '../ui';
+import { Badge, Button, Checkbox, Icon } from '../ui';
 import { ModelParamsButton } from './ModelParamsButton';
 import { ModelParamsPanel } from './ModelParamsPanel';
 import { SearchBox } from './SearchBox';
@@ -40,7 +40,7 @@ export function Toolbar({ store = appStore }: ToolbarProps = {}) {
 
   return (
     <>
-      <div className="toolbar" role="toolbar" aria-label={ru['toolbar.label']}>
+      <div className="toolbar ui-glass" role="toolbar" aria-label={ru['toolbar.label']}>
         <SearchBox store={store} />
 
         <div className="toolbar__actions">
@@ -52,6 +52,7 @@ export function Toolbar({ store = appStore }: ToolbarProps = {}) {
             aria-expanded={filtersPanelOpen}
             onClick={() => setFiltersPanelOpen(!filtersPanelOpen)}
           >
+            <Icon name="filter" size={14} />
             {ru['toolbar.filters']}
             {activeFilterCount > 0 ? <Badge label={String(activeFilterCount)} /> : null}
           </Button>

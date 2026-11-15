@@ -1,9 +1,10 @@
 /**
- * Индикатор загрузки (задача 12a).
+ * Индикатор загрузки (задача 12a; орбитальная анимация — задача 27a).
  *
- * Кольцо вращается само (цикл 900 мс — как «life sign» из motion.md) и
- * сопровождается подписью для программ экранного доступа: цвет и вращение
- * не являются единственным признаком загрузки.
+ * Кольцо орбиты и точка, идущая по нему (цикл 1.1 с). Подпись для программ
+ * экранного доступа остаётся: цвет и движение не единственный признак
+ * загрузки. При `prefers-reduced-motion: reduce` точка стоит на месте
+ * (CSS, глобальное правило движения).
  */
 
 /** Размер индикатора. */
@@ -24,7 +25,7 @@ export interface SpinnerProps {
 /** Размеры кольца в пикселях. */
 const SIZES: Record<SpinnerSize, number> = { sm: 14, md: 20, lg: 28 };
 
-/** Индикатор загрузки. */
+/** Индикатор загрузки с точкой на орбите. */
 export function Spinner({ label, size = 'md', decorative = false, className }: SpinnerProps) {
   const px = SIZES[size];
   const classes = ['ui-spinner', className].filter(Boolean).join(' ');
@@ -41,13 +42,15 @@ export function Spinner({ label, size = 'md', decorative = false, className }: S
       <circle
         cx="12"
         cy="12"
-        r="9"
+        r="8.5"
         fill="none"
         stroke="currentColor"
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        strokeDasharray="42 15"
+        strokeWidth="1.5"
+        strokeOpacity="0.35"
       />
+      <g className="ui-spinner__orbit">
+        <circle cx="12" cy="3.5" r="2" fill="currentColor" />
+      </g>
     </svg>
   );
 

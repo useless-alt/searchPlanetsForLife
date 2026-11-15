@@ -106,6 +106,7 @@ function makeSystemScene() {
     resetCamera: vi.fn(),
     setContext: vi.fn(),
     setToggles: vi.fn(),
+    setHints: vi.fn(),
     dispose: vi.fn(),
   } satisfies ControlledSystemScene;
 
@@ -208,6 +209,58 @@ describe('SystemController — перелёт', () => {
     expect(test.getPlanetDetail).toHaveBeenCalledWith('b');
     expect(test.getPlanetDetail).not.toHaveBeenCalledWith('a');
     expect(test.store.getState().sceneTarget).toBe('star');
+  });
+
+  it('перелёт запускает Exo.MAST один раз и сброс выходит без ошибки', async () => {
+    const test = setup({});
+    active = test;
+    const loadExoMast = vi.fn(async () => undefined);
+    const cancelExoMast = vi.fn();
+    test.store.setState({ loadExoMast, cancelExoMast });
+
+    test.store.getState().requestFly('a', 'planet');
+    test.store.getState().requestFly('a', 'planet');
+
+    expect(loadExoMast).toHaveBeenCalledTimes(1);
+    expect(loadExoMast).toHaveBeenCalledWith('a', 'approach');
+
+    test.store.getState().leaveSystem();
+
+    expect(cancelExoMast).toHaveBeenCalledWith('a', 'approach');
+  });
+
+  it('молекулы Exo.MAST применяются без пересоздания сцены', async () => {
+    const test = setup({});
+    active = test;
+
+    test.store.getState().requestFly('a', 'planet');
+    test.galaxy.arrive();
+    await waitFor(() => expect(test.store.getState().viewMode).toBe('system'));
+
+    test.store.setState({
+      exoMast: {
+        a: {
+          state: 'updated',
+          props: {
+            planetId: 'a',
+            fetchedAt: '2026-11-15T10:00:00.000Z',
+            fromBackup: false,
+            catalog: 'nexsci',
+            raw: {},
+            extracted: {},
+            canonicalName: 'A',
+            atmosphere: { molecules: ['H2O'], keys: ['atmosphere'] },
+            spectraFiles: [],
+          },
+          errorReason: null,
+          trigger: 'approach',
+          spectra: {},
+        },
+      },
+    });
+
+    expect(test.createSystemScene).toHaveBeenCalledTimes(1);
+    expect(test.scenes[0]?.setHints).toHaveBeenLastCalledWith({ molecules: ['H2O'] });
   });
 
   it('Esc во время перелёта возвращает карту и камеру', () => {

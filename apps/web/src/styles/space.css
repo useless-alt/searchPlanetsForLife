@@ -1,0 +1,196 @@
+/*
+  Космический фон (U63; задача 27a).
+
+  Три слоя лежат под всем содержимым и не участвуют в 3D: туманность из трёх
+  радиальных градиентов низкой насыщенности, шум feTurbulence (data:-URI,
+  меньше 2 КБ) и звёздное поле из 120 точек через box-shadow. Слой
+  pointer-events: none; в Three.js-сцену ничего не добавляется — там своя
+  глубина и свой фон из theme.ts.
+
+  Мерцание — только у ближнего слоя, цикл 9 с (не быстрее 6 с по постановке)
+  и через токен --duration-twinkle. При prefers-reduced-motion звёзды стоят.
+*/
+
+.space-bg {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-space);
+  overflow: hidden;
+  pointer-events: none;
+  background: var(--space-0);
+}
+
+.space-bg__nebula {
+  position: absolute;
+  inset: -10%;
+  background-image:
+    radial-gradient(circle at 22% 28%, var(--nebula-1) 0, transparent 46%),
+    radial-gradient(circle at 78% 18%, var(--nebula-2) 0, transparent 52%),
+    radial-gradient(circle at 62% 82%, var(--nebula-3) 0, transparent 58%);
+  opacity: 0.9;
+}
+
+.space-bg__noise {
+  position: absolute;
+  inset: 0;
+  opacity: var(--space-noise-opacity);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 120px 120px;
+}
+
+.space-bg__stars {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.space-bg__stars--far {
+  box-shadow:
+    48vw 60.48vh 0 0px var(--star-color),
+    18.22vw 47.74vh 0 0px var(--star-color),
+    20.99vw 73.89vh 0 0px var(--star-color),
+    79.29vw 24.02vh 0 0px var(--star-color),
+    81.94vw 5.87vh 0 0px var(--star-color),
+    88.26vw 17.76vh 0 0px var(--star-color),
+    51.47vw 24.47vh 0 0px var(--star-color),
+    88.81vw 98.83vh 0 0px var(--star-color),
+    66.24vw 55.68vh 0 0px var(--star-color),
+    15.78vw 6.54vh 0 0px var(--star-color),
+    70.12vw 77.46vh 0 0px var(--star-color),
+    38.02vw 92.07vh 0 0px var(--star-color),
+    62.41vw 6.24vh 0 0px var(--star-color),
+    56.13vw 23.04vh 0 0px var(--star-color),
+    4.82vw 96.58vh 0 0px var(--star-color),
+    19.05vw 83.22vh 0 0px var(--star-color),
+    13.61vw 99.03vh 0 0px var(--star-color),
+    48.47vw 24.92vh 0 0px var(--star-color),
+    88.62vw 46.64vh 0 0px var(--star-color),
+    85.3vw 57.19vh 0 0px var(--star-color),
+    55.68vw 65.39vh 0 0px var(--star-color),
+    97.17vw 77.33vh 0 0px var(--star-color),
+    23.91vw 28.89vh 0 0px var(--star-color),
+    10.96vw 78.76vh 0 0px var(--star-color),
+    84.6vw 2.55vh 0 0px var(--star-color),
+    59.57vw 92.96vh 0 0px var(--star-color),
+    3.04vw 47.68vh 0 0px var(--star-color),
+    56.85vw 48.26vh 0 0px var(--star-color),
+    80.1vw 80.78vh 0 0px var(--star-color),
+    39.86vw 53.36vh 0 0px var(--star-color),
+    84.95vw 8.23vh 0 0px var(--star-color),
+    42.48vw 38.42vh 0 0px var(--star-color),
+    85.53vw 81.91vh 0 0px var(--star-color),
+    89.34vw 11.4vh 0 0px var(--star-color),
+    28.31vw 45.79vh 0 0px var(--star-color),
+    24.38vw 12.61vh 0 0px var(--star-color),
+    44vw 69.07vh 0 0px var(--star-color),
+    12.8vw 75.15vh 0 0px var(--star-color),
+    80.66vw 85.96vh 0 0px var(--star-color),
+    80.68vw 24.2vh 0 0px var(--star-color),
+    90.77vw 87.62vh 0 0px var(--star-color),
+    81.27vw 72.85vh 0 0px var(--star-color),
+    23.99vw 36.33vh 0 0px var(--star-color),
+    1.92vw 97.28vh 0 0px var(--star-color),
+    1.88vw 97.44vh 0 0px var(--star-color),
+    50.92vw 99.24vh 0 0px var(--star-color),
+    76.49vw 9.27vh 0 0px var(--star-color),
+    88.09vw 88.49vh 0 0px var(--star-color),
+    99.03vw 36.33vh 0 0px var(--star-color),
+    88.31vw 43.08vh 0 0px var(--star-color),
+    50.52vw 76.1vh 0 0px var(--star-color),
+    52.01vw 30.28vh 0 0px var(--star-color),
+    10.7vw 14.8vh 0 0px var(--star-color),
+    1.76vw 95.95vh 0 0px var(--star-color),
+    66.92vw 52.38vh 0 0px var(--star-color),
+    28.86vw 55.23vh 0 0px var(--star-color),
+    89.56vw 42.02vh 0 0px var(--star-color),
+    79.13vw 42.26vh 0 0px var(--star-color),
+    25.47vw 14.56vh 0 0px var(--star-color),
+    91.99vw 1.8vh 0 0px var(--star-color),
+    86.08vw 83.05vh 0 0px var(--star-color),
+    31.7vw 30.59vh 0 0px var(--star-color),
+    31.68vw 47.81vh 0 0px var(--star-color),
+    75.05vw 1.19vh 0 0px var(--star-color),
+    78.44vw 47.31vh 0 0px var(--star-color),
+    44.4vw 26.18vh 0 0px var(--star-color),
+    79.78vw 25.12vh 0 0px var(--star-color),
+    0.24vw 45.51vh 0 0px var(--star-color),
+    58.62vw 8.32vh 0 0px var(--star-color),
+    32.23vw 44.76vh 0 0px var(--star-color),
+    92vw 17.65vh 0 0px var(--star-color),
+    12.91vw 37.23vh 0 0px var(--star-color),
+    74.82vw 54.67vh 0 0px var(--star-color),
+    2.98vw 67.56vh 0 0px var(--star-color),
+    14.04vw 36.34vh 0 0px var(--star-color),
+    22.39vw 19.79vh 0 0px var(--star-color),
+    30.07vw 72.24vh 0 0px var(--star-color),
+    26.17vw 37.59vh 0 0px var(--star-color),
+    66.86vw 4.77vh 0 0px var(--star-color),
+    49.07vw 89.55vh 0 0px var(--star-color);
+}
+
+.space-bg__stars--near {
+  width: 2px;
+  height: 2px;
+  box-shadow:
+    37.15vw 57.69vh 0 0px var(--star-color),
+    8.22vw 37.23vh 0 0px var(--star-color),
+    54.68vw 63.23vh 0 0px var(--star-color),
+    77.66vw 88.95vh 0 0px var(--star-color),
+    29.66vw 63.17vh 0 0px var(--star-color),
+    73.94vw 46.96vh 0 0px var(--star-color),
+    29.24vw 4.11vh 0 0px var(--star-color),
+    16.84vw 80.91vh 0 0px var(--star-color),
+    29.47vw 72.32vh 0 0px var(--star-color),
+    54.19vw 85.43vh 0 0px var(--star-color),
+    10.3vw 38.46vh 0 0px var(--star-color),
+    65.01vw 4.53vh 0 0px var(--star-color),
+    70.29vw 7.46vh 0 0px var(--star-color),
+    79.83vw 30.76vh 0 0px var(--star-color),
+    62.4vw 93.88vh 0 0px var(--star-color),
+    82.42vw 11.93vh 0 0px var(--star-color),
+    77.61vw 68.11vh 0 0px var(--star-color),
+    81.93vw 23.05vh 0 0px var(--star-color),
+    27.86vw 43.62vh 0 0px var(--star-color),
+    69.46vw 86.51vh 0 0px var(--star-color),
+    4.8vw 0.69vh 0 0px var(--star-color),
+    98.2vw 48.19vh 0 0px var(--star-color),
+    16.07vw 66.89vh 0 0px var(--star-color),
+    51.2vw 42.3vh 0 0px var(--star-color),
+    25.49vw 99.51vh 0 0px var(--star-color),
+    85.71vw 2.87vh 0 0px var(--star-color),
+    48.95vw 40.49vh 0 0px var(--star-color),
+    68.29vw 4.61vh 0 0px var(--star-color),
+    82.23vw 38.95vh 0 0px var(--star-color),
+    39.78vw 40.92vh 0 0px var(--star-color),
+    62.75vw 61.69vh 0 0px var(--star-color),
+    73.96vw 72.02vh 0 0px var(--star-color),
+    91.34vw 37.04vh 0 0px var(--star-color),
+    19.25vw 0.81vh 0 0px var(--star-color),
+    66.03vw 2.28vh 0 0px var(--star-color),
+    37.35vw 59.47vh 0 0px var(--star-color),
+    4.07vw 50.06vh 0 0px var(--star-color),
+    77.88vw 14.44vh 0 0px var(--star-color),
+    53.94vw 93.94vh 0 0px var(--star-color),
+    53.13vw 22.71vh 0 0px var(--star-color);
+  animation: space-twinkle var(--duration-twinkle) ease-in-out infinite alternate;
+}
+
+@keyframes space-twinkle {
+  from {
+    opacity: 0.55;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .space-bg__stars--near {
+    animation: none;
+  }
+}

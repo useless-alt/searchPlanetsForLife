@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 
+import { hideHelp, showHelpAt } from '../../help/api';
 import { showToast } from '../../components/ui/Toast';
 import { ru } from '../../i18n/ru';
 import { disposeObject3D } from './disposeObject3D';
@@ -22,6 +23,9 @@ export const CLICK_MAX_MOVE_PX = 5;
 
 /** Максимальная длительность клика [мс]. */
 export const CLICK_MAX_DURATION_MS = 300;
+
+/** Ограничение частоты проверки наведения [мс]. */
+export const HOVER_THROTTLE_MS = 50;
 
 /** Причина недоступности звезды по умолчанию. */
 export const STAR_UNAVAILABLE_REASON = ru['scene.starUnavailable'];
@@ -137,6 +141,12 @@ export interface SystemPickingOptions {
   starUnavailableReason?: string;
   /** Выбор цели. */
   onSelect: (target: SceneTarget) => void;
+  /** Наведение на цель; null — указатель ушёл с объектов. */
+  onHover?: (target: SceneTarget | null) => void;
+  /** Является ли цель заглушкой. */
+  isStub?: (target: SceneTarget) => boolean;
+  /** Недостающие параметры для подсказки заглушки. */
+  missing?: (target: SceneTarget) => string[];
   /** Показ Toast; по умолчанию общий `showToast`. */
   toast?: (text: string) => void;
 }
@@ -182,6 +192,8 @@ export function createSystemPicking(options: SystemPickingOptions): SystemPickin
   const toast = options.toast ?? showToast;
   const isStarAvailable = options.isStarAvailable ?? (() => true);
   const starUnavailableReason = options.starUnavailableReason ?? STAR_UNAVAILABLE_REASON;
+  const isStub = options.isStub ?? (() => false);
+  const missingFor = options.missing ?? (() => []);
 
   const planetTarget = planet === null ? null : createTarget('pick-planet', scene);
   const starTarget = createTarget('pick-star', scene);
@@ -191,6 +203,8 @@ export function createSystemPicking(options: SystemPickingOptions): SystemPickin
   const initialCursor = canvas.style.cursor;
   let down: PointerDownState | null = null;
   let disposed = false;
+  let lastHoverAt = 0;
+  let lastHoverTarget: SceneTarget | null = null;
 
   /** Высота холста [px]. */
   function viewportHeight(): number {
@@ -251,13 +265,36 @@ export function createSystemPicking(options: SystemPickingOptions): SystemPickin
     return null;
   }
 
-  /** Обновляет курсор при наведении. */
+  /** Обновляет курсор и подсказку при наведении. */
   function handlePointerMove(event: PointerEvent): void {
     if (disposed) return;
 
+    const now = performance.now();
     const target = targetAt(event.clientX, event.clientY);
 
     canvas.style.cursor = target === null ? initialCursor : 'pointer';
+
+    // Частоту ограничиваем только для повторного наведения на ту же цель:
+    // смена цели должна отвечать сразу (курсор и подсказка).
+    if (now - lastHoverAt < HOVER_THROTTLE_MS && target === lastHoverTarget) return;
+
+    lastHoverAt = now;
+
+    const stub = target !== null && isStub(target);
+
+    if (stub && target !== null) {
+      showHelpAt({
+        key: 'stub.missing',
+        ctx: { missing: missingFor(target) },
+        x: event.clientX,
+        y: event.clientY,
+      });
+    } else if (lastHoverTarget !== null) {
+      hideHelp();
+    }
+
+    options.onHover?.(target);
+    lastHoverTarget = target;
   }
 
   /** Запоминает начало возможного клика. */
@@ -311,6 +348,9 @@ export function createSystemPicking(options: SystemPickingOptions): SystemPickin
   /** Сбрасывает незавершённое нажатие. */
   function handlePointerLeave(): void {
     down = null;
+    lastHoverTarget = null;
+    hideHelp();
+    options.onHover?.(null);
 
     if (!disposed) canvas.style.cursor = initialCursor;
   }
@@ -330,6 +370,7 @@ export function createSystemPicking(options: SystemPickingOptions): SystemPickin
 
       disposed = true;
       down = null;
+      hideHelp();
       canvas.style.cursor = initialCursor;
       canvas.removeEventListener('pointermove', handlePointerMove);
       canvas.removeEventListener('pointerdown', handlePointerDown);

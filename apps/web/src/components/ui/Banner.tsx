@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 
 import { Button } from './Button';
+import { Icon } from './Icon';
 
 /**
  * Баннер (задача 12a; п. 8.3).
@@ -30,80 +31,9 @@ export interface BannerProps {
   className?: string;
 }
 
-/** Значок тона: информация, предупреждение, ошибка. */
+/** Значок тона: информация или предупреждение (ошибка тоже несёт треугольник). */
 function ToneIcon({ tone }: { tone: BannerTone }) {
-  if (tone === 'error') {
-    return (
-      <svg
-        className="ui-banner__icon"
-        width="20"
-        height="20"
-        viewBox="0 0 20 20"
-        aria-hidden="true"
-        focusable="false"
-      >
-        <circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" strokeWidth="1.5" />
-        <path
-          d="M10 5.5v5"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-        />
-        <circle cx="10" cy="14" r="0.9" fill="currentColor" />
-      </svg>
-    );
-  }
-
-  if (tone === 'warning') {
-    return (
-      <svg
-        className="ui-banner__icon"
-        width="20"
-        height="20"
-        viewBox="0 0 20 20"
-        aria-hidden="true"
-        focusable="false"
-      >
-        <path
-          d="M10 2.8 18.2 17H1.8L10 2.8Z"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          strokeLinejoin="round"
-        />
-        <path
-          d="M10 8v4"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-        />
-        <circle cx="10" cy="14.6" r="0.9" fill="currentColor" />
-      </svg>
-    );
-  }
-
-  return (
-    <svg
-      className="ui-banner__icon"
-      width="20"
-      height="20"
-      viewBox="0 0 20 20"
-      aria-hidden="true"
-      focusable="false"
-    >
-      <circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" strokeWidth="1.5" />
-      <path
-        d="M10 9v5.5"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-      />
-      <circle cx="10" cy="6.2" r="0.9" fill="currentColor" />
-    </svg>
-  );
+  return <Icon name={tone === 'info' ? 'info' : 'warning'} size={20} className="ui-banner__icon" />;
 }
 
 /** Баннер с предупреждением, ошибкой или информацией. */

@@ -4,6 +4,8 @@ import { useStore } from 'zustand';
 import ErrorScreen from './components/ErrorScreen';
 import { Header } from './components/header/Header';
 import { PlanetPanel } from './components/planet/PlanetPanel';
+import { ReconstructionPanel } from './components/planet/ReconstructionPanel';
+import { RefreshPlanetButton } from './components/planet/RefreshPlanetButton';
 import { LinkFallbackDialog } from './components/share/LinkFallbackDialog';
 import { TopTable } from './components/table/TopTable';
 import { Toolbar } from './components/toolbar/Toolbar';
@@ -47,6 +49,9 @@ import { ViewportView } from './components/viewport/ViewportView';
 
 // 3D-холст регистрируется один раз на всё приложение (U40, задача 21).
 registerSlot('viewport', ViewportView);
+// Панель реконструкции и кнопка обновления — задача 28.
+registerSlot('reconstruction', ReconstructionPanel);
+registerSlot('refreshPlanet', RefreshPlanetButton);
 
 /** Пропсы приложения. */
 export interface AppProps {
@@ -108,6 +113,14 @@ export default function App({ store = appStore, initialShare = null }: AppProps 
   return (
     <TooltipProvider store={store}>
       <div className="app-shell">
+        {/* 27a: фон-космос под содержимым (U63). В 3D-сцену ничего не добавляется. */}
+        <div className="space-bg" aria-hidden="true">
+          <div className="space-bg__nebula" />
+          <div className="space-bg__stars space-bg__stars--far" />
+          <div className="space-bg__stars space-bg__stars--near" />
+          <div className="space-bg__noise" />
+        </div>
+
         <a className="app-skip-link" href="#app-main">
           {ru['app.skipToContent']}
         </a>

@@ -2,6 +2,7 @@ import { useEffect, useSyncExternalStore } from 'react';
 
 import { ru } from '../../i18n/ru';
 import { Button } from './Button';
+import { Icon } from './Icon';
 
 /**
  * Временное уведомление (задача 20; 13.1).
@@ -79,7 +80,7 @@ function Toast({ item }: { item: ToastItem }) {
   }, [item.id]);
 
   return (
-    <div className="ui-toast" role="status">
+    <div className="ui-toast ui-glass" role="status">
       <p className="ui-toast__text">{item.text}</p>
       <Button
         variant="icon"
@@ -87,15 +88,7 @@ function Toast({ item }: { item: ToastItem }) {
         onClick={() => dismissToast(item.id)}
         aria-label={ru['ui.close']}
       >
-        <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-          <path
-            d="M4 4l8 8M12 4l-8 8"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-          />
-        </svg>
+        <Icon name="close" size={14} />
       </Button>
     </div>
   );

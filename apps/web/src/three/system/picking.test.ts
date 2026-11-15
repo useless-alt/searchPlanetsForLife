@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import * as helpApi from '../../help/api';
 import {
   CLICK_MAX_DURATION_MS,
   CLICK_MAX_MOVE_PX,
@@ -122,6 +123,9 @@ describe('createSystemPicking', () => {
     options: {
       isStarAvailable?: () => boolean;
       toast?: (text: string) => void;
+      isStub?: (target: 'planet' | 'star') => boolean;
+      missing?: (target: 'planet' | 'star') => string[];
+      onHover?: (target: 'planet' | 'star' | null) => void;
     } = {},
   ): SystemPickingController {
     const controller = createSystemPicking({
@@ -136,6 +140,9 @@ describe('createSystemPicking', () => {
       onSelect,
       isStarAvailable: options.isStarAvailable,
       toast: options.toast,
+      isStub: options.isStub,
+      missing: options.missing,
+      onHover: options.onHover,
     });
 
     controllers.push(controller);
@@ -203,6 +210,48 @@ describe('createSystemPicking', () => {
       new MouseEvent('pointermove', { bubbles: true, clientX: 790, clientY: 790 }),
     );
     expect(canvas.style.cursor).toBe('');
+  });
+
+  it('наведение на заглушку показывает stub.missing, уход скрывает', () => {
+    const show = vi.spyOn(helpApi, 'showHelpAt').mockImplementation(() => {});
+    const hide = vi.spyOn(helpApi, 'hideHelp').mockImplementation(() => {});
+    const onHover = vi.fn();
+
+    create(() => undefined, {
+      isStub: () => true,
+      missing: () => ['радиус планеты'],
+      onHover,
+    });
+
+    const point = screenPoint(camera, planet.position);
+
+    canvas.dispatchEvent(
+      new MouseEvent('pointermove', { bubbles: true, clientX: point.x, clientY: point.y }),
+    );
+
+    expect(show).toHaveBeenCalled();
+    expect(show.mock.calls[0]?.[0].key).toBe('stub.missing');
+    expect(show.mock.calls[0]?.[0].ctx?.missing).toEqual(['радиус планеты']);
+    expect(onHover).toHaveBeenCalledWith('planet');
+
+    canvas.dispatchEvent(new MouseEvent('pointerleave', { bubbles: true }));
+
+    expect(hide).toHaveBeenCalled();
+    expect(onHover).toHaveBeenCalledWith(null);
+  });
+
+  it('наведение на реальную планету не показывает stub.missing', () => {
+    const show = vi.spyOn(helpApi, 'showHelpAt').mockImplementation(() => {});
+
+    create(() => undefined, { isStub: () => false });
+
+    const point = screenPoint(camera, planet.position);
+
+    canvas.dispatchEvent(
+      new MouseEvent('pointermove', { bubbles: true, clientX: point.x, clientY: point.y }),
+    );
+
+    expect(show).not.toHaveBeenCalled();
   });
 
   it('освобождает мишени и обработчики', () => {

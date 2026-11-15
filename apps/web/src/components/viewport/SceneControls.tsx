@@ -1,4 +1,5 @@
 import { useEffect, useState, type FocusEvent, type PointerEvent } from 'react';
+import { makeScaleModel } from '@exo/shared';
 import { useStore } from 'zustand';
 
 import { hideHelp, showHelpAt } from '../../help/api';
@@ -94,7 +95,10 @@ export function SceneControls({ store = appStore }: SceneControlsProps) {
   const nominal =
     detail !== null &&
     (orbitalDistance === null || !Number.isFinite(orbitalDistance) || orbitalDistance <= 0);
-  const scaleReason = ru['scene.nominalReason'];
+  const scaleModel = detail === null ? null : makeScaleModel(detail.resolved, 'overview');
+  const nominalSize = scaleModel !== null && (scaleModel.nominalStar || scaleModel.nominalPlanet);
+  const scaleReason = nominalSize ? ru['scene.nominalSizeReason'] : ru['scene.nominalReason'];
+  const realDisabled = nominal || nominalSize;
 
   const orbitLayer = layers.find((layer) => layer.toggleKey === 'showOrbit');
   const hzLayer = layers.find((layer) => layer.toggleKey === 'showHz');
@@ -211,14 +215,17 @@ export function SceneControls({ store = appStore }: SceneControlsProps) {
                   value: 'real',
                   label: ru['scene.realMode'],
                   helpKey: 'scene.scale',
-                  ariaDisabled: nominal,
-                  disabledReason: nominal ? scaleReason : undefined,
+                  ariaDisabled: realDisabled,
+                  disabledReason: realDisabled ? scaleReason : undefined,
                 },
               ]}
             />
           </div>
 
           {nominal ? <p className="scene-controls__note">{ru['scene.nominalNote']}</p> : null}
+          {nominalSize ? (
+            <p className="scene-controls__note">{ru['scene.nominalSizeNote']}</p>
+          ) : null}
         </div>
 
         <div className="scene-controls__toggles">

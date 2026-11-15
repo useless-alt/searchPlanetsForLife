@@ -1,5 +1,5 @@
 import { ru } from '../i18n/ru';
-import { Banner, Button } from './ui';
+import { Banner, Button, Glass } from './ui';
 
 /**
  * Экран ошибки первой загрузки (задача 12, п. 10.1).
@@ -18,7 +18,7 @@ export interface ErrorScreenProps {
 /** Экран ошибки с кнопкой повторного обновления. */
 export default function ErrorScreen({ onRefresh }: ErrorScreenProps) {
   return (
-    <section className="app-screen" aria-labelledby="error-title">
+    <Glass as="section" className="app-screen" aria-labelledby="error-title">
       <h2 className="app-screen__title" id="error-title">
         {ru['error.title']}
       </h2>
@@ -28,6 +28,6 @@ export default function ErrorScreen({ onRefresh }: ErrorScreenProps) {
       <Button variant="primary" onClick={onRefresh}>
         {ru['error.retry']}
       </Button>
-    </section>
+    </Glass>
   );
 }

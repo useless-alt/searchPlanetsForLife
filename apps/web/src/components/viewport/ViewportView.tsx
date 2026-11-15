@@ -4,6 +4,7 @@ import { useStore } from 'zustand';
 import { ru } from '../../i18n/ru';
 import { appStore } from '../../state/store';
 import { RendererHost } from '../../three/host/RendererHost';
+import { setDebugHost } from '../../debug/sceneBridge';
 import type { CameraState, GalaxyRenderer } from '../../three/map/GalaxyRenderer';
 import { GalaxyScene } from '../../three/map/GalaxyScene';
 import { GalaxyPane, type GalaxyViewProps } from './GalaxyPane';
@@ -74,6 +75,7 @@ export function ViewportView({
         labelClassName: 'map-labels',
         reducedMotion,
       });
+      setDebugHost(host);
       const scene = new GalaxyScene({
         data: options.data,
         reducedMotion: options.reducedMotion ?? reducedMotion,
@@ -87,6 +89,7 @@ export function ViewportView({
       cleanupRef.current = () => {
         controller.dispose();
         host.dispose();
+        setDebugHost(null);
       };
 
       const adapter: GalaxyRenderer = {
@@ -177,7 +180,7 @@ export function ViewportView({
   );
 
   return (
-    <div className="viewport-view" aria-label={ru['scene.viewport']}>
+    <div className="viewport-view" aria-label={ru['scene.viewport']} data-view-mode={viewMode}>
       <GalaxyPane
         store={store}
         rendererFactory={legacy ? rendererFactory : modernFactory}

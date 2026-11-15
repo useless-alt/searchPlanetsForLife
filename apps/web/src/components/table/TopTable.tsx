@@ -133,7 +133,7 @@ export function TopTable({ store = appStore }: TopTableProps = {}) {
           onResetSettings={resetSettings}
         />
       ) : (
-        <div className="top-table__scroll" ref={scrollRef}>
+        <div className="top-table__scroll ui-glass" ref={scrollRef}>
           <Table className="top-table__table" aria-label={ru['table.title']}>
             <TableHeader
               sort={sort}

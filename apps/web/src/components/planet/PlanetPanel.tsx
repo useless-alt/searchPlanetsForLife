@@ -7,6 +7,7 @@ import { usePlanetDetail } from '../../state/planetDetail';
 import { appStore, type AppStore } from '../../state/store';
 import { Button, EmptyState } from '../ui';
 import { Decomposition } from './Decomposition';
+import { ExoMastSection } from './ExoMastSection';
 import { HzInfo } from './HzInfo';
 import { ParamTable } from './ParamTable';
 import { PlanetActions } from './PlanetActions';
@@ -70,7 +71,7 @@ export function PlanetPanel({ store = appStore }: PlanetPanelProps) {
 
   return (
     <aside
-      className="planet-card"
+      className="planet-card ui-glass ui-glass--flush"
       role="region"
       aria-label={name}
       aria-busy={loading || undefined}
@@ -112,7 +113,14 @@ export function PlanetPanel({ store = appStore }: PlanetPanelProps) {
             </p>
           )}
 
-          <ParamTable planet={detail.resolved} planetId={detail.id} store={store} />
+          <ParamTable
+            planet={detail.resolved}
+            planetId={detail.id}
+            planetStub={detail.gaps.planetStub}
+            store={store}
+          />
+
+          <ExoMastSection planetId={detail.id} store={store} />
 
           <HzInfo
             planet={detail.resolved}

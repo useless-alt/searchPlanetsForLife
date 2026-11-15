@@ -2,7 +2,7 @@ import type { WorldClass } from '@exo/shared';
 import type { RefObject } from 'react';
 
 import { ru } from '../../i18n/ru';
-import { Button } from '../ui';
+import { Button, Icon } from '../ui';
 
 /**
  * Заголовок карточки планеты (задача 19; п. 10.7, 13.5).
@@ -51,7 +51,7 @@ export function PlanetHeader({ name, planetId, world, headingRef, onClose }: Pla
         aria-label={ru['planet.close']}
         onClick={onClose}
       >
-        ×
+        <Icon name="close" size={18} />
       </Button>
     </div>
   );

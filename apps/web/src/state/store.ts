@@ -19,6 +19,8 @@ import { createStore, type StoreApi } from 'zustand/vanilla';
 
 import { ERROR_LOG_LIMIT, type ApiClient } from '../api/client';
 import { createDefaultApiClient } from '../api/defaultClient';
+import { createDefaultExoMastApi, type ExoMastApi } from '../exomast/api';
+import { createExoMastSlice, type ExoMastEntry, type ExoMastTrigger } from '../exomast/slice';
 import {
   StaleComputeError,
   createDefaultBackend,
@@ -228,6 +230,8 @@ export interface AppState {
   errorLog: ErrorLogEntry[];
   /** Идёт загрузка журнала ошибок. */
   errorLogLoading: boolean;
+  /** Записи ленивого Exo.MAST по планете (задача 28; п. 10.1.4). */
+  exoMast: Record<string, ExoMastEntry>;
 
   /** Запускает загрузку каталога; повторный вызов возвращает тот же промис. */
   start(): Promise<void>;
@@ -317,6 +321,12 @@ export interface AppState {
   getPositions(): Promise<PlanetPosition[]>;
   /** Загружает журнал ошибок источников (п. 8.2). */
   loadErrorLog(): Promise<void>;
+  /** Загружает свойства Exo.MAST планеты (задача 28). */
+  loadExoMast(planetId: string, trigger: ExoMastTrigger): Promise<void>;
+  /** Отменяет автоматический запрос Exo.MAST без ошибки. */
+  cancelExoMast(planetId: string, trigger: 'approach'): void;
+  /** Загружает сведения о спектре из списка Exo.MAST. */
+  loadSpectrum(planetId: string, file: string): Promise<void>;
 }
 
 /** Хранилище приложения (тип zustand). */
@@ -332,6 +342,8 @@ export interface AppStoreDeps {
   pollIntervalMs?: number;
   /** Пауза между опросами (в тестах — без задержки). */
   sleep?: (ms: number) => Promise<void>;
+  /** Клиент Exo.MAST; по умолчанию `/api` через глобальный fetch. */
+  exoMastApi?: ExoMastApi;
 }
 
 /** Пауза по умолчанию. */
@@ -427,6 +439,9 @@ function initialState(): Omit<
   | 'getPlanetDetail'
   | 'getPositions'
   | 'loadErrorLog'
+  | 'loadExoMast'
+  | 'cancelExoMast'
+  | 'loadSpectrum'
 > {
   return {
     phase: 'boot',
@@ -469,6 +484,7 @@ function initialState(): Omit<
     },
     errorLog: [],
     errorLogLoading: false,
+    exoMast: {},
   };
 }
 
@@ -493,6 +509,17 @@ export function createAppStore(deps: AppStoreDeps = {}): AppStore {
     let starting: Promise<void> | null = null;
     /** Промис текущего обновления (single-flight). */
     let refreshing: Promise<void> | null = null;
+
+    // Кэш Exo.MAST живёт в этом же хранилище: карточка и 3D-сцена читают
+    // одни и те же записи, а вытеснение знает планету текущей сцены.
+    const exoMastSlice = createExoMastSlice(
+      (patch) => set(patch as Partial<AppState>),
+      () => get(),
+      {
+        api: deps.exoMastApi ?? createDefaultExoMastApi(),
+        getScenePlanetId: () => get().scenePlanetId,
+      },
+    );
 
     /** Применяет статусы источников из ответа `/api/status`. */
     function applyStatus(status: StatusResponse, trackRefreshing: boolean): void {
@@ -953,6 +980,8 @@ export function createAppStore(deps: AppStoreDeps = {}): AppStore {
           set({ errorLogLoading: false });
         }
       },
+
+      ...exoMastSlice.actions,
     };
   });
 }

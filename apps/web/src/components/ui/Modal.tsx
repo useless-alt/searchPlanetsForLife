@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 
 import { Button } from './Button';
+import { Icon } from './Icon';
 
 /**
  * Модальное окно (задача 12a).
@@ -48,7 +49,7 @@ export function Modal({
   const dialog = useRef<HTMLDivElement>(null);
   const trigger = useRef<Element | null>(null);
 
-  const classes = ['ui-modal', className].filter(Boolean).join(' ');
+  const classes = ['ui-modal', 'ui-glass', className].filter(Boolean).join(' ');
 
   const focusable = useCallback((): HTMLElement[] => {
     const root = dialog.current;
@@ -141,15 +142,7 @@ export function Modal({
             {title}
           </h2>
           <Button variant="icon" onClick={onClose} aria-label={closeLabel}>
-            <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-              <path
-                d="M4 4l8 8M12 4l-8 8"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-              />
-            </svg>
+            <Icon name="close" size={16} />
           </Button>
         </div>
         <div className="ui-modal__body">{children}</div>

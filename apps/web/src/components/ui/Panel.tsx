@@ -2,6 +2,7 @@ import { useEffect, useId, useRef } from 'react';
 import type { ReactNode } from 'react';
 
 import { Button } from './Button';
+import { Icon } from './Icon';
 
 /**
  * Выдвижная панель (задача 12a; п. 4.1).
@@ -81,7 +82,14 @@ export function Panel({
 
   if (!open) return null;
 
-  const classes = ['ui-panel', side === 'left' ? 'ui-panel--left' : null].filter(Boolean).join(' ');
+  const classes = [
+    'ui-panel',
+    'ui-glass',
+    'ui-glass--flush',
+    side === 'left' ? 'ui-panel--left' : null,
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   return (
     <aside ref={panel} className={classes} aria-labelledby={titleId} tabIndex={-1}>
@@ -90,15 +98,7 @@ export function Panel({
           {title}
         </h2>
         <Button variant="icon" onClick={onClose} aria-label={closeLabel}>
-          <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-            <path
-              d="M4 4l8 8M12 4l-8 8"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-            />
-          </svg>
+          <Icon name="close" size={16} />
         </Button>
       </div>
       <div className="ui-panel__body">{children}</div>
