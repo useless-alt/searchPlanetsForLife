@@ -92,6 +92,7 @@ npm start        # сборка + сервер на http://localhost:8787
 
 ## Документы
 
+- [`docs/run-guide.md`](docs/run-guide.md) — **как запустить проект у себя** (для проверяющего).
 - [`docs/project-context.md`](docs/project-context.md) — глобальный контекст проекта.
 - [`docs/roadmap.md`](docs/roadmap.md) — мастер-план, Задачи 1–31.
 - [`docs/cleanup-report.md`](docs/cleanup-report.md) — аудит и зачистка черновика (Задача 0).
