@@ -328,6 +328,19 @@ export class SystemController {
       this.handleFly(state.flyRequest.seq);
     }
 
+    // Смена выбранной планеты внутри открытой системы: сцена следует за
+    // выбором без отдельного нажатия «Приблизить». Пересборка идёт через
+    // beginSystem(), поэтому старый onArrive не пройдёт токен.
+    if (
+      this.mode === 'system' &&
+      state.selectedPlanetId !== null &&
+      state.selectedPlanetId !== previous.selectedPlanetId &&
+      state.selectedPlanetId !== state.scenePlanetId
+    ) {
+      void this.beginSystem(state.selectedPlanetId, state.sceneTarget);
+      return;
+    }
+
     if (state.leaveSystemSeq !== previous.leaveSystemSeq && this.mode !== 'galaxy') {
       this.returnToGalaxy();
       return;

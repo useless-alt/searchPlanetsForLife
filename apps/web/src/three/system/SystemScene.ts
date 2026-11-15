@@ -33,7 +33,7 @@ import type { RendererHost } from '../host/RendererHost';
 import type { ViewScene } from '../host/ViewScene';
 import { disposeObject3D } from './disposeObject3D';
 // Слои и движения регистрируются в реестрах при импорте (задачи 23–24).
-import './layers/hzLayer';
+// Зона обитаемости (hzLayer) отключена по решению владельца: слой и переключатель убраны.
 import './layers/keplerMotion';
 import './layers/orbitLayer';
 import './spin/spinProvider';

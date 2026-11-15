@@ -310,7 +310,7 @@ describe('SystemController — сцена системы', () => {
     expect(test.scenes[1]?.dispose).not.toHaveBeenCalled();
   });
 
-  it('смена selectedPlanetId без flyRequest не меняет сцену', async () => {
+  it('смена selectedPlanetId внутри системы перестраивает сцену', async () => {
     const test = setup({ positions: {} });
     active = test;
     test.store.getState().requestFly('a', 'planet');
@@ -319,9 +319,8 @@ describe('SystemController — сцена системы', () => {
     test.store.getState().selectPlanet('b');
     test.store.setState({ rows: [] });
 
-    expect(test.store.getState().scenePlanetId).toBe('a');
-    expect(test.createSystemScene).toHaveBeenCalledTimes(1);
-    expect(test.scenes[0]?.dispose).not.toHaveBeenCalled();
+    // Сцена следует за выбором без отдельного «Приблизить».
+    await waitFor(() => expect(test.store.getState().scenePlanetId).toBe('b'));
   });
 
   it('leaveSystem восстанавливает камеру, освобождает сцену и сохраняет выбор', async () => {

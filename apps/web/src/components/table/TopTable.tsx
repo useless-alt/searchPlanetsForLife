@@ -92,6 +92,9 @@ export function TopTable({ store = appStore }: TopTableProps = {}) {
   /** Выбирает планету и запрашивает перелёт к ней (U38). */
   function flyToPlanet(planetId: string): void {
     selectPlanet(planetId);
+    // Вьюпорт 3D живёт в карточке планеты: без неё перелёт некуда показать,
+    // и кнопка «Приблизить» выглядела нерабочей.
+    setPlanetCardOpen(true);
     requestFly(planetId, 'planet');
   }
 

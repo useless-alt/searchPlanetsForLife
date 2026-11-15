@@ -279,32 +279,6 @@ describe('заголовок и подсказка', () => {
   });
 });
 
-describe('зона обитаемости', () => {
-  it('показывает d_in и d_out и меняет числа при смене границ', async () => {
-    const details = { current: makeDetail() };
-    const { store } = setup({ getPlanetDetail: async () => details.current });
-
-    renderPanel(store);
-    await waitDetail();
-
-    expect(screen.getByText('0.95')).toBeTruthy();
-    expect(screen.getByText('1.37')).toBeTruthy();
-    expect(screen.getByText(new RegExp(ru['params.hz.optimistic']))).toBeTruthy();
-
-    details.current = makeDetail({
-      hz: { d_in: 0.75, d_out: 1.25, d_eff: 1, HZD: 0.3, F_HZ: 0.25 },
-    });
-
-    act(() => {
-      store.getState().setHzBounds('conservative');
-    });
-
-    await screen.findByText('0.75');
-    await waitFor(() => expect(screen.queryByText('0.95')).toBeNull());
-    expect(screen.getByText(new RegExp(ru['params.hz.conservative']))).toBeTruthy();
-  });
-});
-
 describe('декомпозиция балла', () => {
   it('по умолчанию свёрнута, раскрывается кнопкой с aria-expanded', async () => {
     const { store } = setup();

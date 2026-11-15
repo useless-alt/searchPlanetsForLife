@@ -168,16 +168,11 @@ describe('SceneControls — слои', () => {
         status: () => 'available',
         build: () => new THREE.Group(),
       });
-      registerSystemLayer({
-        id: 'hz',
-        toggleKey: 'showHz',
-        status: () => 'available',
-        build: () => new THREE.Group(),
-      });
     });
 
     expect(screen.getByRole('button', { name: ru['scene.orbit'] })).toBeTruthy();
-    expect(screen.getByRole('button', { name: ru['scene.hz'] })).toBeTruthy();
+    // Зона обитаемости убрана из интерфейса по решению владельца.
+    expect(screen.queryByRole('button', { name: ru['scene.hz'] })).toBeNull();
   });
 
   it('недоступный слой получает aria-disabled и причину в подсказке', () => {
@@ -212,7 +207,7 @@ describe('SceneControls — слои', () => {
     expect(show.mock.calls[0]?.[0].ctx?.disabledReason).toBe('Орбита не рассчитана');
   });
 
-  it('доступный слой переключает showOrbit и showHz', () => {
+  it('доступный слой переключает showOrbit', () => {
     const store = makeStore(sceneDetail({}));
 
     act(() => {
@@ -222,21 +217,13 @@ describe('SceneControls — слои', () => {
         status: () => 'available',
         build: () => new THREE.Group(),
       });
-      registerSystemLayer({
-        id: 'hz',
-        toggleKey: 'showHz',
-        status: () => 'available',
-        build: () => new THREE.Group(),
-      });
     });
 
     render(<SceneControls store={store} />);
 
     fireEvent.click(screen.getByRole('button', { name: ru['scene.orbit'] }));
-    fireEvent.click(screen.getByRole('button', { name: ru['scene.hz'] }));
 
     expect(store.getState().showOrbit).toBe(false);
-    expect(store.getState().showHz).toBe(false);
   });
 });
 

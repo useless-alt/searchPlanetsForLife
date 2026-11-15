@@ -330,7 +330,7 @@ describe('строка таблицы', () => {
     expect(store.getState().planetCardOpen).toBe(true);
   });
 
-  it('«Приблизить» выбирает планету, запрашивает перелёт и не открывает карточку', () => {
+  it('«Приблизить» выбирает планету, запрашивает перелёт и открывает карточку', () => {
     const { store } = makeStore({ rows: [row('a', { name: 'Планета A' })] });
 
     render(<TopTable store={store} />);
@@ -339,7 +339,8 @@ describe('строка таблицы', () => {
 
     expect(store.getState().selectedPlanetId).toBe('a');
     expect(store.getState().flyRequest).toEqual({ planetId: 'a', target: 'planet', seq: 1 });
-    expect(store.getState().planetCardOpen).toBe(false);
+    // Вьюпорт 3D живёт в карточке: без неё перелёт некуда показать.
+    expect(store.getState().planetCardOpen).toBe(true);
   });
 
   it('строка с insufficient показывает значок «Недостаточно данных»', () => {

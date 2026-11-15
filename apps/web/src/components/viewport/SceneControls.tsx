@@ -68,13 +68,11 @@ export function SceneControls({ store = appStore }: SceneControlsProps) {
   const sceneTarget = useStore(store, (state) => state.sceneTarget);
   const scaleMode = useStore(store, (state) => state.scaleMode);
   const showOrbit = useStore(store, (state) => state.showOrbit);
-  const showHz = useStore(store, (state) => state.showHz);
   const detail = useStore(store, (state) => state.sceneDetail);
   const layerStatus = useStore(store, (state) => state.systemLayerStatus);
   const setSceneTarget = useStore(store, (state) => state.setSceneTarget);
   const setScaleMode = useStore(store, (state) => state.setScaleMode);
   const setShowOrbit = useStore(store, (state) => state.setShowOrbit);
-  const setShowHz = useStore(store, (state) => state.setShowHz);
   const leaveSystem = useStore(store, (state) => state.leaveSystem);
   const requestSystemReset = useStore(store, (state) => state.requestSystemReset);
   const focusTable = useStore(store, (state) => state.focusTable);
@@ -101,7 +99,6 @@ export function SceneControls({ store = appStore }: SceneControlsProps) {
   const realDisabled = nominal || nominalSize;
 
   const orbitLayer = layers.find((layer) => layer.toggleKey === 'showOrbit');
-  const hzLayer = layers.find((layer) => layer.toggleKey === 'showHz');
 
   /** Обработчик подсказки для сегментированного переключателя. */
   function handleSegmentPointer(event: PointerEvent<HTMLDivElement>): void {
@@ -230,7 +227,6 @@ export function SceneControls({ store = appStore }: SceneControlsProps) {
 
         <div className="scene-controls__toggles">
           {layerToggle(orbitLayer, 'showOrbit', showOrbit, ru['scene.orbit'], setShowOrbit)}
-          {layerToggle(hzLayer, 'showHz', showHz, ru['scene.hz'], setShowHz)}
         </div>
       </div>
 

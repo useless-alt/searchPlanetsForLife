@@ -8,7 +8,6 @@ import { appStore, type AppStore } from '../../state/store';
 import { Button, EmptyState } from '../ui';
 import { Decomposition } from './Decomposition';
 import { ExoMastSection } from './ExoMastSection';
-import { HzInfo } from './HzInfo';
 import { ParamTable } from './ParamTable';
 import { PlanetActions } from './PlanetActions';
 import { PlanetBadges } from './PlanetBadges';
@@ -121,13 +120,6 @@ export function PlanetPanel({ store = appStore }: PlanetPanelProps) {
           />
 
           <ExoMastSection planetId={detail.id} store={store} />
-
-          <HzInfo
-            planet={detail.resolved}
-            hz={detail.hz}
-            bounds={settings.hzBounds}
-            planetId={detail.id}
-          />
 
           <Decomposition
             score={detail.score}
