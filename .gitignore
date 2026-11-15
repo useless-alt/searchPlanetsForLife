@@ -26,15 +26,12 @@ data/backups/*
 !data/backups/exomercat/
 !data/backups/gaia/
 !data/backups/simbad/
-!data/backups/exomast/
 data/backups/nasa/*
 data/backups/exoplanet_eu/*
 data/backups/exomercat/*
 data/backups/gaia/*
 data/backups/simbad/*
-data/backups/exomast/*
 !data/backups/*/latest.json
-!data/backups/exomast/index.json
 
 # Локальные архивы резервных копий (выгрузка в Supabase).
 data/archives/
